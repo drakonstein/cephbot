@@ -42,10 +42,10 @@ def ceph_command(command):
 def handle_command(command, channel):
     if command.startswith(CEPH_CLUSTER_ID):
         response = ceph_command(command.split(CEPH_CLUSTER_ID)[1].strip().lower())
-    if command.startswith(HELP):
+    elif command.startswith(HELP):
         response = HELP_MSG
     else:
-        response = "I don't know how to help you that."
+        return
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
 
