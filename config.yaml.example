@@ -1,0 +1,5 @@
+CEPH_CLUSTER_ID: ceph
+CEPH_CONF: /etc/ceph/ceph.conf
+SLACK_BOT_NAME: cephbot
+SLACK_BOT_TOKEN: 
+SLACK_BOT_ID: 
