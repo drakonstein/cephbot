@@ -1,5 +1,7 @@
 CEPH_CLUSTER_ID: ceph
 CEPH_CONF: /etc/ceph/ceph.conf
+CEPH_USER: client.admin
+CEPH_KEYRING: /etc/ceph/ceph.client.admin.keyring
 SLACK_BOT_NAME: cephbot
 SLACK_BOT_TOKEN: 
 SLACK_BOT_ID: 

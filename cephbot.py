@@ -11,6 +11,8 @@ import yaml
 config = yaml.safe_load(open("config.yaml"))
 CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
 CEPH_CONF = config['CEPH_CONF']
+CEPH_USER = config['CEPH_USER']
+CEPH_KEYRING = config['CEPH_KEYRING']
 SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
 SLACK_BOT_ID = config['SLACK_BOT_ID']
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
@@ -19,7 +21,7 @@ AT_BOT = "<@" + SLACK_BOT_ID + ">"
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 
 def ceph_command(command):
-    cluster = rados.Rados(conffile=CEPH_CONF)
+    cluster = rados.Rados(conffile=CEPH_CONF, conf=dict(keyring = CEPH_KEYRING), name=CEPH_USER)
     cluster.connect()
     cmd = {"prefix":command, "format":"plain"}
     try:
@@ -37,16 +39,13 @@ def ceph_command(command):
 def handle_command(command, channel):
     if command.startswith(CEPH_CLUSTER_ID):
         response = ceph_command(command.split(CEPH_CLUSTER_ID)[1].strip().lower())
+    else:
+        response = "I don't know how to help you that."
     slack_client.api_call("chat.postMessage", channel=channel,
                           text=response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
-    """
-        The Slack Real Time Messaging API is an events firehose.
-        this parsing function returns None unless a message is
-        directed at the Bot, based on its ID.
-    """
     output_list = slack_rtm_output
     if output_list and len(output_list) > 0:
         for output in output_list:
