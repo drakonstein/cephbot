@@ -5,3 +5,4 @@ CEPH_KEYRING: /etc/ceph/ceph.client.admin.keyring
 SLACK_BOT_NAME: cephbot
 SLACK_BOT_TOKEN: 
 SLACK_BOT_ID: 
+HELP_MSG: Supply the cluster ID followed by a command.  status, osd tree, osd dump, mon dump, df, osd df

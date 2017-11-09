@@ -15,6 +15,9 @@ CEPH_USER = config['CEPH_USER']
 CEPH_KEYRING = config['CEPH_KEYRING']
 SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
 SLACK_BOT_ID = config['SLACK_BOT_ID']
+HELP_MSG = config['HELP_MSG']
+
+HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
 
 # instantiate Slack & Twilio clients
@@ -39,6 +42,8 @@ def ceph_command(command):
 def handle_command(command, channel):
     if command.startswith(CEPH_CLUSTER_ID):
         response = ceph_command(command.split(CEPH_CLUSTER_ID)[1].strip().lower())
+    if command.startswith(HELP):
+        response = HELP_MSG
     else:
         response = "I don't know how to help you that."
     slack_client.api_call("chat.postMessage", channel=channel,
