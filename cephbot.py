@@ -16,6 +16,8 @@ CEPH_KEYRING = config['CEPH_KEYRING']
 SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
 SLACK_BOT_ID = config['SLACK_BOT_ID']
 HELP_MSG = config['HELP_MSG']
+TOO_LONG = config["TOO_LONG"]
+TOO_LONG_MSG = config["TOO_LONG_MSG"]
 
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
@@ -30,24 +32,38 @@ def ceph_command(command):
     try:
         ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
     except:
-        return "Something went wrong while executing " + command + " on the Ceph cluster."
+        return "Something went wrong while executing " + command + " on the Ceph cluster.", None
     cluster.shutdown()
 
-    if output:
-        return output
+    if output and len(output.split('\n')) < TOO_LONG:
+        return output, None
+    elif output and len(output.split('\n')) >= TOO_LONG:
+        return TOO_LONG_MSG, output
     else:
-        return "Something went wrong while executing '" + command + "' on the Ceph cluster."
+        return "Something went wrong while executing '" + command + "' on the Ceph cluster.", None
 
 
-def handle_command(command, channel):
+def handle_command(command, channel, user):
     if command.startswith(CEPH_CLUSTER_ID):
-        response = ceph_command(command.split(CEPH_CLUSTER_ID)[1].strip().lower())
+        command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
+        if command.startswith(HELP):
+            channel_response = HELP_MSG
+            user_response = None
+        else:
+            channel_response, user_response = ceph_command(command)
     elif command.startswith(HELP):
-        response = HELP_MSG
+        channel_response = HELP_MSG
+        user_response = None
     else:
         return
-    slack_client.api_call("chat.postMessage", channel=channel,
-                          text=response, as_user=True)
+
+    if not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
+        slack_client.api_call("chat.postMessage", channel=channel,
+                          text=channel_response, as_user=True)
+
+    if user_response:
+        slack_client.api_call("chat.postMessage", channel=user,
+                          text=user_response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
@@ -57,8 +73,10 @@ def parse_slack_output(slack_rtm_output):
             if output and 'text' in output and AT_BOT in output['text']:
                 # return text after the @ mention, whitespace removed
                 return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel']
-    return None, None
+                       output['channel'], output['user']
+            if output and 'text' in output and output['channel'].startswith('D') and output['user'] != SLACK_BOT_ID:
+                return output['text'], output['channel'], output['user']
+    return None, None, None
 
 
 if __name__ == "__main__":
@@ -66,9 +84,9 @@ if __name__ == "__main__":
     if slack_client.rtm_connect():
         print("CephBot connected and running!")
         while True:
-            command, channel = parse_slack_output(slack_client.rtm_read())
-            if command and channel:
-                handle_command(command, channel)
+            command, channel, user = parse_slack_output(slack_client.rtm_read())
+            if command and channel and user:
+                handle_command(command, channel, user)
             time.sleep(READ_WEBSOCKET_DELAY)
     else:
         print("Connection failed. Invalid Slack token or bot ID?")
