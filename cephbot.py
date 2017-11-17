@@ -52,6 +52,7 @@ def ceph_command(command):
 
 
 def handle_command(command, channel, user):
+    command = command.strip().lower()
     if command.startswith(CEPH_CLUSTER_ID):
         command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
         if command.startswith(HELP):

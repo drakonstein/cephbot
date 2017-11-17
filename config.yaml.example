@@ -5,6 +5,6 @@ CEPH_KEYRING: /etc/ceph/ceph.client.admin.keyring
 SLACK_BOT_NAME: cephbot
 SLACK_BOT_TOKEN: 
 SLACK_BOT_ID: 
-HELP_MSG: "ceph: status, osd tree, osd dump, mon dump, df, osd df"
+HELP_MSG: "ceph: status, osd stat, mon stat, pg stat, df, osd tree, osd df, fs dump"
 TOO_LONG: 20
 TOO_LONG_MSG: Response was too long. Check your DMs.
