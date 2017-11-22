@@ -13,6 +13,6 @@ CEPH_CONF: /etc/ceph/ceph.conf
 CEPH_USER: client.admin
 CEPH_KEYRING: /etc/ceph/ceph.client.admin.keyring
 
-HELP_MSG: "ceph: status, osd stat, mon stat, pg stat, df, osd tree, osd df, fs dump"
+HELP_MSG: "ceph: status, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump"
 TOO_LONG: 20
 TOO_LONG_MSG: Response was too long. Check your DMs.

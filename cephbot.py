@@ -6,6 +6,7 @@ from slackclient import SlackClient
 import rados
 import json
 import yaml
+import subprocess
 
 # read config variables
 try:
@@ -64,7 +65,7 @@ except:
 try:
     HELP_MSG = CEPH_CLUSTER_ID + ": " + config['HELP_MSG']
 except:
-    HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat"
+    HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat, down osds, blocked requests"
 try:
     TOO_LONG = config["TOO_LONG"]
 except:
@@ -83,19 +84,25 @@ slack_client = SlackClient(SLACK_BOT_TOKEN)
 
 def ceph_command(command):
     cluster = rados.Rados(conffile=CEPH_CONF, conf=dict(keyring = CEPH_KEYRING), name=CEPH_USER)
+    run_mon_command = True
     try:
         cluster.connect()
     except:
         print "Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings."
         exit()
-    if command == "down osds" or command == "down osd":
+
+    if command == "blocked requests":
+        run_mon_command = False
+        output = subprocess.check_output(['./scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+    elif command == "down osds" or command == "down osd":
         cmd = {"prefix":"osd tree", "format":"json"}
     else:
         cmd = {"prefix":command, "format":"plain"}
-    try:
-        ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
-    except:
-        return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+    if run_mon_command:
+        try:
+            ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
+        except:
+            return "Something went wrong while executing " + command + " on the Ceph cluster.", None
     cluster.shutdown()
 
     if command == "down osds" or command == "down osd":
@@ -121,6 +128,7 @@ def ceph_command(command):
         if output == "":
             output = "All OSDs are up."
 
+    output = output.strip()
     if output and len(output.split('\n')) < TOO_LONG:
         return output, None
     elif output and len(output.split('\n')) >= TOO_LONG:
