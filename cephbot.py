@@ -88,12 +88,38 @@ def ceph_command(command):
     except:
         print "Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings."
         exit()
-    cmd = {"prefix":command, "format":"plain"}
+    if command == "down osds" or command == "down osd":
+        cmd = {"prefix":"osd tree", "format":"json"}
+    else:
+        cmd = {"prefix":command, "format":"plain"}
     try:
         ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
     except:
         return "Something went wrong while executing " + command + " on the Ceph cluster.", None
     cluster.shutdown()
+
+    if command == "down osds" or command == "down osd":
+        output = json.loads(output)
+        lastroot = None
+        lasthost = None
+        msg = ""
+        for item in output['nodes']:
+            if item['type'] == 'root':
+                root = item['name']
+            elif item['type'] == 'host':
+                host = item['name']
+            elif item['type'] == 'osd' and item['status'] == 'down':
+                osd = item['name']
+                if not root == lastroot:
+                    msg = msg + "\n" + root
+                if not host == lasthost:
+                    msg = msg + "\n    " + host
+                msg = msg + "\n        " + osd
+                lastroot = root
+                lasthost = host
+        output = msg.strip()
+        if output == "":
+            output = "All OSDs are up."
 
     if output and len(output.split('\n')) < TOO_LONG:
         return output, None
@@ -111,7 +137,7 @@ def handle_command(command, channel, user):
         command = command.strip().lower()
         if command.startswith(CEPH_CLUSTER_ID):
             command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
-            if SLACK_CHANNEL_IDS and not channel in SLACK_CHANNEL_IDS:
+            if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
                 channel_response = SLACK_CHANNEL_ACCESS_DENIED
                 user_response = None
             elif command.startswith(HELP):
@@ -120,7 +146,7 @@ def handle_command(command, channel, user):
             else:
                 channel_response, user_response = ceph_command(command)
         elif command.startswith(HELP):
-            if SLACK_CHANNEL_IDS and not channel in SLACK_CHANNEL_IDS:
+            if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
                 channel_response = None
                 user_response = None
             else:
