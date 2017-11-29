@@ -118,10 +118,11 @@ def ceph_command(command):
             elif item['type'] == 'osd' and item['status'] == 'down':
                 osd = item['name']
                 if not root == lastroot:
-                    msg = msg + "\n" + root
-                if not host == lasthost:
-                    msg = msg + "\n    " + host
-                msg = msg + "\n        " + osd
+                    msg = msg + "\n" + root + "\n    " + host + "\n        " + osd
+                elif not host == lasthost:
+                    msg = msg + "\n    " + host + "\n        " + osd
+                else:
+                    msg = msg + ", " + osd
                 lastroot = root
                 lasthost = host
         output = msg.strip()
