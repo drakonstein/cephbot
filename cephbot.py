@@ -139,30 +139,29 @@ def ceph_command(command):
 
 
 def handle_command(command, channel, user):
-    if SLACK_USER_IDS and not user in SLACK_USER_IDS:
-        channel_response = None
-        user_response = SLACK_USER_ACCESS_DENIED
-    else:
-        command = command.strip().lower()
-        if command.startswith(CEPH_CLUSTER_ID):
-            command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
-            if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-                channel_response = SLACK_CHANNEL_ACCESS_DENIED
-                user_response = None
-            elif command.startswith(HELP):
-                channel_response = HELP_MSG
-                user_response = None
-            else:
-                channel_response, user_response = ceph_command(command)
+    command = command.strip().lower()
+    if command.startswith(CEPH_CLUSTER_ID):
+        command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
+        if SLACK_USER_IDS and not user in SLACK_USER_IDS:
+            channel_response = None
+            user_response = SLACK_USER_ACCESS_DENIED
+        if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+            channel_response = SLACK_CHANNEL_ACCESS_DENIED
+            user_response = None
         elif command.startswith(HELP):
-            if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-                channel_response = None
-                user_response = None
-            else:
-                channel_response = HELP_MSG
-                user_response = None
+            channel_response = HELP_MSG
+            user_response = None
         else:
-            return
+            channel_response, user_response = ceph_command(command)
+    elif command.startswith(HELP):
+        if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+            channel_response = None
+            user_response = None
+        else:
+            channel_response = HELP_MSG
+            user_response = None
+    else:
+        return
 
     # Direct Messages have a channel that starts with a 'D'
     if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
