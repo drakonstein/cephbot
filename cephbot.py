@@ -145,7 +145,7 @@ def handle_command(command, channel, user):
         if SLACK_USER_IDS and not user in SLACK_USER_IDS:
             channel_response = None
             user_response = SLACK_USER_ACCESS_DENIED
-        if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+        elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
             channel_response = SLACK_CHANNEL_ACCESS_DENIED
             user_response = None
         elif command.startswith(HELP):
