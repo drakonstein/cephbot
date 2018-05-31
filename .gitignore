@@ -1,6 +1,9 @@
 # Config file
 config.yaml
 
+# Debug file
+test.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

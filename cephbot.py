@@ -49,6 +49,12 @@ try:
     CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
 except:
     CEPH_CLUSTER_ID = "ceph"
+CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
+try:
+    CLUSTER_GROUP = config['CLUSTER_GROUP']
+except:
+    CLUSTER_GROUP = "all"
+CLUSTER_GROUP = CLUSTER_GROUP.strip().lower()
 try:
     CEPH_CONF = config['CEPH_CONF']
 except:
@@ -96,6 +102,13 @@ def ceph_command(command):
         output = subprocess.check_output(['./scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     elif command == "down osds" or command == "down osd":
         cmd = {"prefix":"osd tree", "format":"json"}
+    elif command == "io":
+        run_mon_command = False
+        output = subprocess.check_output(['./scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+    elif command.startswith("pool io"):
+        opt_pool = command.split("pool io")[1].strip().lower()
+        run_mon_command = False
+        output = subprocess.check_output(['./scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
     else:
         cmd = {"prefix":command, "format":"plain"}
     if run_mon_command:
@@ -139,9 +152,14 @@ def ceph_command(command):
 
 
 def handle_command(command, channel, user):
+    show_cluster_id = False
     command = command.strip().lower()
-    if command.startswith(CEPH_CLUSTER_ID):
-        command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
+    if command.startswith(CEPH_CLUSTER_ID) or command.startswith(CLUSTER_GROUP):
+        if command.startswith(CEPH_CLUSTER_ID):
+            command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
+        elif command.startswith(CLUSTER_GROUP):
+            show_cluster_id = True
+            command = command.split(CLUSTER_GROUP)[1].strip().lower()
         if SLACK_USER_IDS and not user in SLACK_USER_IDS:
             channel_response = None
             user_response = SLACK_USER_ACCESS_DENIED
@@ -157,6 +175,9 @@ def handle_command(command, channel, user):
         if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
             channel_response = None
             user_response = None
+        elif SLACK_USER_IDS and not user in SLACK_USER_IDS:
+            channel_response = None
+            user_response = None
         else:
             channel_response = HELP_MSG
             user_response = None
@@ -165,10 +186,14 @@ def handle_command(command, channel, user):
 
     # Direct Messages have a channel that starts with a 'D'
     if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
+        if show_cluster_id:
+            channel_response = CEPH_CLUSTER_ID + ": " + channel_response
         slack_client.api_call("chat.postMessage", channel=channel,
                           text=channel_response, as_user=True)
 
     if user_response:
+        if show_cluster_id:
+            user_response = CEPH_CLUSTER_ID + ": " + user_response
         slack_client.api_call("chat.postMessage", channel=user,
                           text=user_response, as_user=True)
 
