@@ -1,0 +1,2 @@
+PyYAML==3.12
+slackclient==1.2.1
