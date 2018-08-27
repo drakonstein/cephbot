@@ -9,77 +9,54 @@ import yaml
 import subprocess
 
 # read config variables
-try:
-    config = yaml.safe_load(open("config.yaml"))
-except:
-    print "config.yaml not found"
-    exit()
-try:
-    SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
-except:
+SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN','')
+if SLACK_BOT_TOKEN == '':
     print "SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API."
     exit()
-try:
-    SLACK_BOT_ID = config['SLACK_BOT_ID']
-except:
+
+SLACK_BOT_ID = os.getenv('SLACK_BOT_ID','')
+if SLACK_BOT_ID == '':
     print "SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen."
     exit()
-try:
-    SLACK_USER_IDS = config['SLACK_USER_IDS']
-except:
-    SLACK_USER_IDS = None
+
+SLACK_USER_IDS = os.getenv('SLACK_USER_IDS', None)
 if not SLACK_USER_IDS:
     print "Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml."
-try:
-    SLACK_CHANNEL_IDS = config['SLACK_CHANNEL_IDS']
-except:
-    SLACK_CHANNEL_IDS = None
+
+SLACK_CHANNEL_IDS = os.getenv('SLACK_CHANNEL_IDS', None)
 if not SLACK_CHANNEL_IDS:
     print "I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml."
-try:
-    SLACK_USER_ACCESS_DENIED = config['SLACK_USER_ACCESS_DENIED']
-except:
+
+SLACK_USER_ACCESS_DENIED = os.getenv('SLACK_USER_ACCESS_DENIED','')
+if SLACK_USER_ACCESS_DENIED == '':
     SLACK_USER_ACCESS_DENIED = "You do not have permission to use me."
-try:
-    SLACK_CHANNEL_ACCESS_DENIED = config['SLACK_CHANNEL_ACCESS_DENIED']
-except:
+
+SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED','')
+if SLACK_CHANNEL_ACCESS_DENIED == '':
     SLACK_CHANNEL_ACCESS_DENIED = "This channel does not have permission to use me."
 
-try:
-    CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
-except:
+CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID','')
+if CEPH_CLUSTER_ID == '':
     CEPH_CLUSTER_ID = "ceph"
 CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
-try:
-    CLUSTER_GROUP = config['CLUSTER_GROUP']
-except:
+
+CLUSTER_GROUP = os.getenv('CLUSTER_GROUP','')
+if CLUSTER_GROUP == '':
     CLUSTER_GROUP = "all"
 CLUSTER_GROUP = CLUSTER_GROUP.strip().lower()
-try:
-    CEPH_CONF = config['CEPH_CONF']
-except:
-    CEPH_CONF =  "/etc/ceph/ceph.conf"
-try:
-    CEPH_USER = config['CEPH_USER']
-except:
-    CEPH_USER = "client.admin"
-try:
-    CEPH_KEYRING = config['CEPH_KEYRING']
-except:
-    CEPH_KEYRING = "/etc/ceph/ceph.client.admin.keyring"
 
-try:
-    HELP_MSG = CEPH_CLUSTER_ID + ": " + config['HELP_MSG']
-except:
+CEPH_CONF = os.getenv('CEPH_CONF', '/etc/ceph/ceph.conf')
+CEPH_USER = os.getenv('CEPH_USER', "client.admin")
+CEPH_KEYRING = os.getenv('CEPH_KEYRING', "/etc/ceph/ceph.client.admin.keyring")
+
+HELP_MSG = os.getenv('HELP_MSG', '')
+if HELP_MSG == '':
     HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat, down osds, blocked requests"
-try:
-    TOO_LONG = config["TOO_LONG"]
-except:
-    TOO_LONG = 20
-try:
-    TOO_LONG_MSG = config["TOO_LONG_MSG"]
-except:
-    TOO_LONG_MSG = "Response was too long. Check your DMs."
+HELP_MSG = CEPH_CLUSTER_ID + ": " + HELP_MSG
+
+TOO_LONG = os.getenv("TOO_LONG", 20)
+
+TOO_LONG_MSG = os.getenv("TOO_LONG_MSG", "Response was too long. Check your DMs.")
 
 
 HELP = "help"

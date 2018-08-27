@@ -10,3 +10,12 @@ I generally create a client.cephbot user in Ceph for this `ceph auth get-or-crea
 Required non-standard Python libraries are slackclient and pyyaml which can be installed via pip.  The server this is running on needs to have ceph installed (for bash scripts in the scripts/ directory and the rados python library) and needs to be able to communicate with the mons, but otherwise does not require any other cluster integrations.
 
 To run this for multiple clusters, spin up multiple instances of it with a different CEPH_CLUSTER_ID in the config as well as a different CEPH_CONF and CEPH_KEYRING for each additional cluster.  I like to do this in a screen with multiple windows on the screen from a server that can communicate with all of the ceph clusters (a master admin node), but running each on a different server for each cluster would work as well as long as the server can also communicate with Slack.
+
+## Execution
+
+Update the .env files with your values.  Then execute the following:
+
+``` bash
+source .env
+python cephbot.py
+```

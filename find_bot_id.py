@@ -5,11 +5,10 @@ from slackclient import SlackClient
 import yaml
 
 # read config variables
-config = yaml.safe_load(open("config.yaml"))
-SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
-SLACK_BOT_NAME = config['SLACK_BOT_NAME']
+SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
+SLACK_BOT_NAME = os.getenv('SLACK_BOT_NAME')
 
-slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
+slack_client = SlackClient(SLACK_BOT_TOKEN)
 
 
 if __name__ == "__main__":
