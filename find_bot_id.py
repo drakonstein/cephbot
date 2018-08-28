@@ -2,7 +2,6 @@
 
 import os
 from slackclient import SlackClient
-import yaml
 
 # read config variables
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
