@@ -12,30 +12,30 @@ import subprocess
 try:
   config = yaml.safe_load(open("/cephbot/conf/config.yaml"))
 except:
-  print "config.yaml not found"
+  print("config.yaml not found")
   exit()
 try:
   SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
 except:
-  print "SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API."
+  print("SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API.")
   exit()
 try:
   SLACK_BOT_ID = config['SLACK_BOT_ID']
 except:
-  print "SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen."
+  print("SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen.")
   exit()
 try:
   SLACK_USER_IDS = config['SLACK_USER_IDS']
 except:
   SLACK_USER_IDS = None
 if not SLACK_USER_IDS:
-  print "Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml."
+  print("Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml.")
 try:
   SLACK_CHANNEL_IDS = config['SLACK_CHANNEL_IDS']
 except:
   SLACK_CHANNEL_IDS = None
 if not SLACK_CHANNEL_IDS:
-  print "I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml."
+  print("I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml.")
 try:
   SLACK_USER_ACCESS_DENIED = config['SLACK_USER_ACCESS_DENIED']
 except:
@@ -91,7 +91,7 @@ def ceph_command(command, thread):
   try:
     cluster.connect()
   except:
-    print "Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings."
+    print("Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings.")
     exit()
 
   if command == "blocked requests":
