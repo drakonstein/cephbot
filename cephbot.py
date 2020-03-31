@@ -10,76 +10,73 @@ import subprocess
 
 # read config variables
 try:
-    config = yaml.safe_load(open("config.yaml"))
+  config = yaml.safe_load(open("/cephbot/conf/config.yaml"))
 except:
-    print "config.yaml not found"
-    exit()
+  print "config.yaml not found"
+  exit()
 try:
-    SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
+  SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
 except:
-    print "SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API."
-    exit()
+  print "SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API."
+  exit()
 try:
-    SLACK_BOT_ID = config['SLACK_BOT_ID']
+  SLACK_BOT_ID = config['SLACK_BOT_ID']
 except:
-    print "SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen."
-    exit()
+  print "SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen."
+  exit()
 try:
-    SLACK_USER_IDS = config['SLACK_USER_IDS']
+  SLACK_USER_IDS = config['SLACK_USER_IDS']
 except:
-    SLACK_USER_IDS = None
+  SLACK_USER_IDS = None
 if not SLACK_USER_IDS:
-    print "Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml."
+  print "Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml."
 try:
-    SLACK_CHANNEL_IDS = config['SLACK_CHANNEL_IDS']
+  SLACK_CHANNEL_IDS = config['SLACK_CHANNEL_IDS']
 except:
-    SLACK_CHANNEL_IDS = None
+  SLACK_CHANNEL_IDS = None
 if not SLACK_CHANNEL_IDS:
-    print "I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml."
+  print "I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml."
 try:
-    SLACK_USER_ACCESS_DENIED = config['SLACK_USER_ACCESS_DENIED']
+  SLACK_USER_ACCESS_DENIED = config['SLACK_USER_ACCESS_DENIED']
 except:
-    SLACK_USER_ACCESS_DENIED = "You do not have permission to use me."
+  SLACK_USER_ACCESS_DENIED = "You do not have permission to use me."
 try:
-    SLACK_CHANNEL_ACCESS_DENIED = config['SLACK_CHANNEL_ACCESS_DENIED']
+  SLACK_CHANNEL_ACCESS_DENIED = config['SLACK_CHANNEL_ACCESS_DENIED']
 except:
-    SLACK_CHANNEL_ACCESS_DENIED = "This channel does not have permission to use me."
+  SLACK_CHANNEL_ACCESS_DENIED = "This channel does not have permission to use me."
 
 try:
-    CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
+  CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
 except:
-    CEPH_CLUSTER_ID = "ceph"
+  CEPH_CLUSTER_ID = "ceph"
 CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
 try:
-    CLUSTER_GROUP = config['CLUSTER_GROUP']
+  CLUSTER_GROUP = config['CLUSTER_GROUP']
 except:
-    CLUSTER_GROUP = "all"
+  CLUSTER_GROUP = "all"
 CLUSTER_GROUP = CLUSTER_GROUP.strip().lower()
 try:
-    CEPH_CONF = config['CEPH_CONF']
+  CEPH_CONF = config['CEPH_CONF']
 except:
-    CEPH_CONF =  "/etc/ceph/ceph.conf"
+  CEPH_CONF =  "/etc/ceph/ceph.conf"
 try:
-    CEPH_USER = config['CEPH_USER']
+  CEPH_USER = config['CEPH_USER']
 except:
-    CEPH_USER = "client.admin"
+  CEPH_USER = "client.admin"
 try:
-    CEPH_KEYRING = config['CEPH_KEYRING']
+  CEPH_KEYRING = config['CEPH_KEYRING']
 except:
-    CEPH_KEYRING = "/etc/ceph/ceph.client.admin.keyring"
+  CEPH_KEYRING = "/etc/ceph/ceph.client.admin.keyring"
 
 try:
-    HELP_MSG = CEPH_CLUSTER_ID + ": " + config['HELP_MSG']
+  HELP_MSG = CEPH_CLUSTER_ID + ": " + config['HELP_MSG']
 except:
-    HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat, down osds, blocked requests"
+  HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat, down osds, blocked requests"
 try:
-    TOO_LONG = config["TOO_LONG"]
+  TOO_LONG = config["TOO_LONG"]
 except:
-    TOO_LONG = 20
-try:
-    TOO_LONG_MSG = config["TOO_LONG_MSG"]
-except:
-    TOO_LONG_MSG = "Response was too long. Check your DMs."
+  TOO_LONG = 20
+TOO_LONG_MSG = "Long responses get threaded."
 
 
 HELP = "help"
@@ -88,138 +85,161 @@ AT_BOT = "<@" + SLACK_BOT_ID + ">"
 # instantiate Slack & Twilio clients
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 
-def ceph_command(command):
-    cluster = rados.Rados(conffile=CEPH_CONF, conf=dict(keyring = CEPH_KEYRING), name=CEPH_USER)
-    run_mon_command = True
+def ceph_command(command, thread):
+  cluster = rados.Rados(conffile=CEPH_CONF, conf=dict(keyring = CEPH_KEYRING), name=CEPH_USER)
+  run_mon_command = True
+  try:
+    cluster.connect()
+  except:
+    print "Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings."
+    exit()
+
+  if command == "blocked requests":
+    run_mon_command = False
     try:
-        cluster.connect()
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
-        print "Something prevented the connection to the Ceph cluster. Check your CEPH_USER and CEPH_KEYRING settings."
-        exit()
+      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+  elif command == "down osds" or command == "down osd":
+    cmd = {"prefix":"osd tree", "format":"json"}
+  elif command == "io":
+    run_mon_command = False
+    try:
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+    except:
+      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+  elif command.startswith("pool io"):
+    opt_pool = command.split("pool io")[1].strip().lower()
+    run_mon_command = False
+    try:
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
+    except:
+      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+  else:
+    cmd = {"prefix":command, "format":"plain"}
+  if run_mon_command:
+    try:
+      ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
+    except:
+      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+  cluster.shutdown()
 
-    if command == "blocked requests":
-        run_mon_command = False
-        output = subprocess.check_output(['./scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
-    elif command == "down osds" or command == "down osd":
-        cmd = {"prefix":"osd tree", "format":"json"}
-    elif command == "io":
-        run_mon_command = False
-        output = subprocess.check_output(['./scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
-    elif command.startswith("pool io"):
-        opt_pool = command.split("pool io")[1].strip().lower()
-        run_mon_command = False
-        output = subprocess.check_output(['./scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
-    else:
-        cmd = {"prefix":command, "format":"plain"}
-    if run_mon_command:
-        try:
-            ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
-        except:
-            return "Something went wrong while executing " + command + " on the Ceph cluster.", None
-    cluster.shutdown()
-
-    if command == "down osds" or command == "down osd":
-        output = json.loads(output)
-        lastroot = None
-        lasthost = None
-        msg = ""
-        for item in output['nodes']:
-            if item['type'] == 'root':
-                root = item['name']
-            elif item['type'] == 'host':
-                host = item['name']
-            elif item['type'] == 'osd' and item['status'] == 'down':
-                osd = item['name']
-                if not root == lastroot:
-                    msg = msg + "\n" + root + "\n    " + host + "\n        " + osd
-                elif not host == lasthost:
-                    msg = msg + "\n    " + host + "\n        " + osd
-                else:
-                    msg = msg + ", " + osd
-                lastroot = root
-                lasthost = host
-        output = msg.strip()
-        if output == "":
-            output = "All OSDs are up."
-
-    output = output.strip()
-    if output and len(output.split('\n')) < TOO_LONG:
-        return output, None
-    elif output and len(output.split('\n')) >= TOO_LONG:
-        return TOO_LONG_MSG, output
-    else:
-        return "Something went wrong while executing '" + command + "' on the Ceph cluster.", None
-
-
-def handle_command(command, channel, user):
-    show_cluster_id = False
-    command = command.strip().lower()
-    if command.startswith(CEPH_CLUSTER_ID) or command.startswith(CLUSTER_GROUP):
-        if command.startswith(CEPH_CLUSTER_ID):
-            command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
-        elif command.startswith(CLUSTER_GROUP):
-            show_cluster_id = True
-            command = command.split(CLUSTER_GROUP)[1].strip().lower()
-        if SLACK_USER_IDS and not user in SLACK_USER_IDS:
-            channel_response = None
-            user_response = SLACK_USER_ACCESS_DENIED
-        elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-            channel_response = SLACK_CHANNEL_ACCESS_DENIED
-            user_response = None
-        elif command.startswith(HELP):
-            channel_response = HELP_MSG
-            user_response = None
+  if command == "down osds" or command == "down osd":
+    output = json.loads(output)
+    lastroot = None
+    lasthost = None
+    msg = ""
+    for item in output['nodes']:
+      if item['type'] == 'root':
+        root = item['name']
+      elif item['type'] == 'host':
+        host = item['name']
+      elif item['type'] == 'osd' and item['status'] == 'down':
+        osd = item['name']
+        if not root == lastroot:
+          msg = msg + "\n" + root + "\n  " + host + "\n    " + osd
+        elif not host == lasthost:
+          msg = msg + "\n  " + host + "\n    " + osd
         else:
-            channel_response, user_response = ceph_command(command)
+          msg = msg + ", " + osd
+        lastroot = root
+        lasthost = host
+    output = msg.strip()
+    if output == "":
+      output = "All OSDs are up."
+
+  output = output.strip()
+  if output and ( len(output.split('\n')) < TOO_LONG or thread ):
+    return output, None
+  elif output and len(output.split('\n')) >= TOO_LONG:
+    return TOO_LONG_MSG, output
+  else:
+    return "Something went wrong while executing '" + command + "' on the Ceph cluster.", None
+
+
+def handle_command(command, channel, user, thread):
+  show_cluster_id = False
+  command = command.strip().lower()
+  if command.startswith(CEPH_CLUSTER_ID) or command.startswith(CLUSTER_GROUP):
+    if command.startswith(CEPH_CLUSTER_ID):
+      command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
+    elif command.startswith(CLUSTER_GROUP):
+      show_cluster_id = True
+      command = command.split(CLUSTER_GROUP)[1].strip().lower()
+    if SLACK_USER_IDS and not user in SLACK_USER_IDS:
+      channel_response = None
+      user_response = SLACK_USER_ACCESS_DENIED
+    elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+      channel_response = SLACK_CHANNEL_ACCESS_DENIED
+      user_response = None
     elif command.startswith(HELP):
-        if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-            channel_response = None
-            user_response = None
-        elif SLACK_USER_IDS and not user in SLACK_USER_IDS:
-            channel_response = None
-            user_response = None
-        else:
-            channel_response = HELP_MSG
-            user_response = None
+      channel_response = HELP_MSG
+      user_response = None
     else:
-        return
+      channel_response, user_response = ceph_command(command, thread)
+  elif command.startswith(HELP):
+    if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+      channel_response = None
+      user_response = None
+    elif SLACK_USER_IDS and not user in SLACK_USER_IDS:
+      channel_response = None
+      user_response = None
+    else:
+      channel_response = HELP_MSG
+      user_response = None
+  else:
+    return
 
-    # Direct Messages have a channel that starts with a 'D'
-    if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
-        if show_cluster_id:
-            channel_response = CEPH_CLUSTER_ID + ": " + channel_response
-        slack_client.api_call("chat.postMessage", channel=channel,
-                          text=channel_response, as_user=True)
+  response = None
+  # Direct Messages have a channel that starts with a 'D'
+  if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
+    if show_cluster_id:
+      channel_response = CEPH_CLUSTER_ID + ": " + channel_response
+    if thread:
+      slack_client.api_call("chat.postMessage", channel=channel, thread_ts=thread, text=channel_response, as_user=True)
+    else:
+      response = slack_client.api_call("chat.postMessage", channel=channel, text=channel_response, as_user=True)
 
-    if user_response:
-        if show_cluster_id:
-            user_response = CEPH_CLUSTER_ID + ": " + user_response
-        slack_client.api_call("chat.postMessage", channel=user,
-                          text=user_response, as_user=True)
+  
+  if user_response:
+    if channel_response and channel_response == TOO_LONG_MSG and response:
+      thread = response['ts']
+    else:
+      thread = None
+    if show_cluster_id:
+      user_response = CEPH_CLUSTER_ID + ": " + user_response
+    if thread:
+      slack_client.api_call("chat.postMessage", channel=channel, thread_ts=thread, text=user_response, as_user=True)
+    else:
+      slack_client.api_call("chat.postMessage", channel=user, text=user_response, as_user=True)
 
 
 def parse_slack_output(slack_rtm_output):
-    output_list = slack_rtm_output
-    if output_list and len(output_list) > 0:
-        for output in output_list:
-            if output and 'text' in output and AT_BOT in output['text']:
-                # return text after the @ mention, whitespace removed
-                return output['text'].split(AT_BOT)[1].strip().lower(), \
-                       output['channel'], output['user']
-            # Direct Messages have a channel that starts with a 'D'
-            elif output and 'text' in output and output['channel'].startswith('D') and output['user'] != SLACK_BOT_ID:
-                return output['text'], output['channel'], output['user']
-    return None, None, None
+  output_list = slack_rtm_output
+  if output_list and len(output_list) > 0:
+    for output in output_list:
+      if output and 'thread_ts' in output:
+        thread = output['thread_ts']
+      else:
+        thread = None
+      if output and 'text' in output and AT_BOT in output['text']:
+        # return text after the @ mention, whitespace removed
+        return output['text'].split(AT_BOT)[1].strip().lower(), \
+             output['channel'], output['user'], thread
+      # Direct Messages have a channel that starts with a 'D'
+      elif output and 'text' in output and output['channel'].startswith('D') and output['user'] != SLACK_BOT_ID:
+        return output['text'], output['channel'], output['user'], thread
+  return None, None, None, None
 
 
 if __name__ == "__main__":
-    READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
-    if slack_client.rtm_connect():
-        print("CephBot connected and running!")
-        while True:
-            command, channel, user = parse_slack_output(slack_client.rtm_read())
-            if command and channel and user:
-                handle_command(command, channel, user)
-            time.sleep(READ_WEBSOCKET_DELAY)
-    else:
-        print("Connection failed. Invalid Slack token or bot ID?")
+  READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
+  if slack_client.rtm_connect():
+    print("CephBot connected and running!")
+    while True:
+      command, channel, user, thread = parse_slack_output(slack_client.rtm_read())
+      if command and channel and user:
+        handle_command(command, channel, user, thread)
+      time.sleep(READ_WEBSOCKET_DELAY)
+  else:
+    print("Connection failed. Invalid Slack token or bot ID?")
