@@ -10,7 +10,7 @@ import subprocess
 
 # read config variables
 try:
-  config = yaml.safe_load(open("/cephbot/conf/config.yaml"))
+  config = yaml.safe_load(open("./config.yaml"))
 except:
   print("config.yaml not found")
   exit()
@@ -97,7 +97,7 @@ def ceph_command(command, thread):
   if command == "blocked requests":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command == "down osds" or command == "down osd":
@@ -105,14 +105,14 @@ def ceph_command(command, thread):
   elif command == "io":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command.startswith("pool io"):
     opt_pool = command.split("pool io")[1].strip().lower()
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', '/cephbot/scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   else:
