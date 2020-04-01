@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cephbot
+  namespace: ceph-mgt
+  labels:
+    app: cephbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cephbot
+  template:
+    metadata:
+      labels:
+        app: cephbot
+    spec:
+      containers:
+        - name: cephbot
+          image: ceph/ceph:v14.2.8
+          command:
+          command:
+            - /bin/sh
+          args:
+            - -c
+#            - /cephbot/container/entrypoint.sh
+            - /bin/sleep infinity
+          volumeMounts:
+            - name: cephbot
+              mountPath: /cephbot
+      initContainers:
+        - name: git
+          image: alpine/git
+          command:
+            - git
+          args:
+            - clone
+            - https://github.com/drakonstein/cephbot.git
+            - /cephbot
+          volumeMounts:
+            - name: cephbot
+              mountPath: /cephbot
+      volumes:
+        - name: cephbot
+          emptyDir: {}
+#        - name: cephbot-secrets
+#          secret:
+#            secretName: cephbot-secrets
