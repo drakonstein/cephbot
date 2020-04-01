@@ -5,79 +5,43 @@ import time
 from slackclient import SlackClient
 import rados
 import json
-import yaml
 import subprocess
 
 # read config variables
-try:
-  config = yaml.safe_load(open("./config.yaml"))
-except:
-  print("config.yaml not found")
+SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN', '')
+if SLACK_BOT_TOKEN == '':
+  print("SLACK_BOT_TOKEN is not defined. This is needed to open a connection to the Slack API.")
   exit()
-try:
-  SLACK_BOT_TOKEN = config['SLACK_BOT_TOKEN']
-except:
-  print("SLACK_BOT_TOKEN is not defined in config.yaml. This is needed to open a connection to the Slack API.")
+
+SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '')
+if SLACK_BOT_ID == '':
+  print("SLACK_BOT_ID is not defined. This is needed to know when cephbot should listen.")
   exit()
-try:
-  SLACK_BOT_ID = config['SLACK_BOT_ID']
-except:
-  print("SLACK_BOT_ID is not defined in config.yaml. This is needed to know when cephbot should listen.")
-  exit()
-try:
-  SLACK_USER_IDS = config['SLACK_USER_IDS']
-except:
-  SLACK_USER_IDS = None
+
+SLACK_USER_IDS = os.getenv('SLACK_USER_IDS', None)
 if not SLACK_USER_IDS:
-  print("Any user can talk to me. SLACK_USER_IDS is not defined or is empty in config.yaml.")
-try:
-  SLACK_CHANNEL_IDS = config['SLACK_CHANNEL_IDS']
-except:
-  SLACK_CHANNEL_IDS = None
+  print("Any user can talk to me. SLACK_USER_IDS is not defined or is empty.")
+
+SLACK_CHANNEL_IDS = os.getenv('SLACK_CHANNEL_IDS', None)
 if not SLACK_CHANNEL_IDS:
-  print("I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty in config.yaml.")
-try:
-  SLACK_USER_ACCESS_DENIED = config['SLACK_USER_ACCESS_DENIED']
-except:
-  SLACK_USER_ACCESS_DENIED = "You do not have permission to use me."
-try:
-  SLACK_CHANNEL_ACCESS_DENIED = config['SLACK_CHANNEL_ACCESS_DENIED']
-except:
-  SLACK_CHANNEL_ACCESS_DENIED = "This channel does not have permission to use me."
+  print("I will respond in any channel. SLACK_CHANNEL_IDS is not defined or is empty.")
 
-try:
-  CEPH_CLUSTER_ID = config['CEPH_CLUSTER_ID']
-except:
-  CEPH_CLUSTER_ID = "ceph"
+SLACK_USER_ACCESS_DENIED = os.getenv('SLACK_USER_ACCESS_DENIED', "You do not have permission to use me.")
+SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This channel does not have permission to use me.")
+
+CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID', "ceph")
 CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
-try:
-  CLUSTER_GROUP = config['CLUSTER_GROUP']
-except:
-  CLUSTER_GROUP = "all"
+
+CLUSTER_GROUP = os.getenv('CLUSTER_GROUP', "all")
 CLUSTER_GROUP = CLUSTER_GROUP.strip().lower()
-try:
-  CEPH_CONF = config['CEPH_CONF']
-except:
-  CEPH_CONF =  "/etc/ceph/ceph.conf"
-try:
-  CEPH_USER = config['CEPH_USER']
-except:
-  CEPH_USER = "client.admin"
-try:
-  CEPH_KEYRING = config['CEPH_KEYRING']
-except:
-  CEPH_KEYRING = "/etc/ceph/ceph.client.admin.keyring"
+CEPH_CONF = os.getenv('CEPH_CONF', "/etc/ceph/ceph.conf")
+CEPH_USER = os.getenv('CEPH_USER', "client.admin")
+CEPH_KEYRING = os.getenv('CEPH_KEYRING', "/etc/ceph/ceph.client.admin.keyring")
 
-try:
-  HELP_MSG = CEPH_CLUSTER_ID + ": " + config['HELP_MSG']
-except:
-  HELP_MSG = CEPH_CLUSTER_ID + ": status, osd stat, mon, stat, pg stat, down osds, blocked requests"
-try:
-  TOO_LONG = config["TOO_LONG"]
-except:
-  TOO_LONG = 20
+HELP_MSG = os.getenv('HELP_MSG', "status, osd stat, mon, stat, pg stat, down osds, blocked requests")
+HELP_MSG = CEPH_CLUSTER_ID + ": " + HELP_MSG
+TOO_LONG = os.getenv("TOO_LONG", 20)
 TOO_LONG_MSG = "Long responses get threaded."
-
 
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
