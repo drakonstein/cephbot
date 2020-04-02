@@ -69,7 +69,6 @@ def ceph_command(command, thread):
     cmd = {"prefix":"osd tree", "format":"json"}
   elif command == "io":
     run_mon_command = False
-    print("/usr/bin/timeout 5 " + SCRIPTS_FOLDER + "/io.sh " + CEPH_CONF + " " + CEPH_USER + " " + CEPH_KEYRING)
     try:
       output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
