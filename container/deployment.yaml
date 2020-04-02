@@ -26,12 +26,15 @@ spec:
 #            - -c
 #            - /bin/sleep infinity
             - /cephbot/container/entrypoint.sh
+            - quiet
           volumeMounts:
             - name: cephbot
               mountPath: /cephbot
             - name: cephbot-conf
               mountPath: /conf
           env:
+            - name: PYTHONUNBUFFERED
+              value: 0
             - name: SLACK_BOT_TOKEN
               valueFrom:
                 secretKeyRef:
