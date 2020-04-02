@@ -34,7 +34,7 @@ spec:
               mountPath: /conf
           env:
             - name: PYTHONUNBUFFERED
-              value: 0
+              value: "0"
             - name: SLACK_BOT_TOKEN
               valueFrom:
                 secretKeyRef:
