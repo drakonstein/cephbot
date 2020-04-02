@@ -23,8 +23,6 @@ spec:
           command:
             - /bin/sh
           args:
-#            - -c
-#            - /bin/sleep infinity
             - /cephbot/container/entrypoint.sh
             - quiet
           volumeMounts:
@@ -33,6 +31,7 @@ spec:
             - name: cephbot-conf
               mountPath: /conf
           env:
+## Environment variables below are set to defaults
             - name: PYTHONUNBUFFERED
               value: "0"
             - name: SLACK_BOT_TOKEN
@@ -40,12 +39,25 @@ spec:
                 secretKeyRef:
                   name: cephbot-token
                   key: token
+# SLACK_BOT_ID is required
             - name: SLACK_BOT_ID
-              value: "U7VNLU2RG"
+              value: ""
+            - name: SLACK_BOT_NAME
+              value: "cephbot"
+            - name: SLACK_USER_ACCESS_DENIED
+              value: "You do not have permission to use me."
             - name: SLACK_USER_IDS
-              value: "U7HRVF7U3"
+              value: ""
+            - name: SLACK_CHANNEL_ACCESS_DENIED
+              value: "This channel does not have permission to use me."
             - name: SLACK_CHANNEL_IDS
-              value: "G7L6QS4F4"
+              value: ""
+            - name: SCRIPTS_FOLDER
+              value: "/cephbot/scripts"
+            - name: CEPH_CLUSTER_ID
+              value: "ceph"
+            - name: CLUSTER_GROUP
+              value: "all"
             - name: CEPH_CONF
               value: "/conf/ceph.conf"
             - name: CEPH_USER
@@ -56,8 +68,6 @@ spec:
               value: "status, health, io, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump, pool io"
             - name: TOO_LONG
               value: "30"
-            - name: SCRIPTS_FOLDER
-              value: "/cephbot/scripts"
       initContainers:
         - name: git
           image: alpine/git

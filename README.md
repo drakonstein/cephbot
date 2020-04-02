@@ -1,6 +1,8 @@
 # cephbot
 Slack bot for Ceph
 
+There are instructions for how to deploy this to kubernetes in the kubernetes folder of this repo.
+
 I got my start for interfacing with slack from here. Thank you Matt Makai. https://www.fullstackpython.com/blog/build-first-slack-bot-python.html
 
 The setup for this is pretty simple.  You need to find the Slack Bot's Token, Name, and ID.  There is an example script to get the Bot's ID.  The Token and Name will be visible in the Bot name on Slack's website for it.
