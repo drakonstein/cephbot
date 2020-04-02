@@ -12,8 +12,13 @@ elif [ -n "$(command -v apt-get)" ]; then
 fi
 cmd2="python2 -m pip --disable-pip-version-check install -r /cephbot/requirements.txt"
 if $quiet; then
+  echo "Output of the following commands has been suppressed."
+  echo "$cmd"
   $cmd > /dev/null 2>&1
+  echo "done"
+  echo "$cmd2"
   $cmd2 > /dev/null 2>&1
+  echo "done"
 else
   $cmd
   $cmd2
