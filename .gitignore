@@ -1,8 +1,6 @@
 # Config file
-.env
 kubernetes/deployment.yaml
 kubernetes/namespace.json
-
 
 # Debug file
 test.py
