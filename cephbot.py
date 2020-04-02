@@ -32,6 +32,7 @@ SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This cha
 CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID', "ceph")
 CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
 
+SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', '.')
 CLUSTER_GROUP = os.getenv('CLUSTER_GROUP', "all")
 CLUSTER_GROUP = CLUSTER_GROUP.strip().lower()
 CEPH_CONF = os.getenv('CEPH_CONF', "/etc/ceph/ceph.conf")
@@ -61,7 +62,7 @@ def ceph_command(command, thread):
   if command == "blocked requests":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command == "down osds" or command == "down osd":
@@ -69,14 +70,14 @@ def ceph_command(command, thread):
   elif command == "io":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command.startswith("pool io"):
     opt_pool = command.split("pool io")[1].strip().lower()
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', './scripts/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   else:

@@ -23,14 +23,14 @@ spec:
           command:
             - /bin/sh
           args:
-            - -c
-#            - /cephbot/container/entrypoint.sh
-            - /bin/sleep infinity
+#            - -c
+#            - /bin/sleep infinity
+            - /cephbot/container/entrypoint.sh
           volumeMounts:
             - name: cephbot
               mountPath: /cephbot
             - name: cephbot-conf
-              mountPath: /cephbot/conf
+              mountPath: /conf
           env:
             - name: SLACK_BOT_TOKEN
               valueFrom:
@@ -42,15 +42,17 @@ spec:
             - name: SLACK_USER_IDS
               value: "U7HRVF7U3"
             - name: CEPH_CONF
-              value: "/cephbot/conf/ceph.conf"
+              value: "/conf/ceph.conf"
             - name: CEPH_USER
               value: "client.cephbot"
             - name: CEPH_KEYRING
-              value: "/cephbot/conf/ceph.client.cephbot.keyring"
+              value: "/conf/ceph.client.cephbot.keyring"
             - name: HELP_MSG
               value: "status, health, io, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump, pool io"
             - name: TOO_LONG
               value: "30"
+            - name: SCRIPTS_FOLDER
+              value: "/cephbot/scripts"
       initContainers:
         - name: git
           image: alpine/git
