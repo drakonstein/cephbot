@@ -125,7 +125,7 @@ def handle_command(command, channel, user, thread):
   command = command.strip().lower()
   cluster = command.split()[0]
   cluster_match = False
-  if cluster is CEPH_CLUSTER_ID:
+  if cluster == CEPH_CLUSTER_ID:
     cluster_match = True
   elif cluster in CLUSTER_ALIASES:
     cluster_match = True
