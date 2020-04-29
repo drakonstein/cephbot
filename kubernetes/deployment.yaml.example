@@ -56,8 +56,8 @@ spec:
               value: "/cephbot/scripts"
             - name: CEPH_CLUSTER_ID
               value: "ceph"
-            - name: CLUSTER_GROUP
-              value: "all"
+            - name: CLUSTER_ALIASES
+              value: "all prod"
             - name: CEPH_CONF
               value: "/conf/ceph.conf"
             - name: CEPH_USER
