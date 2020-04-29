@@ -29,9 +29,8 @@ if not SLACK_CHANNEL_IDS:
 SLACK_USER_ACCESS_DENIED = os.getenv('SLACK_USER_ACCESS_DENIED', "You do not have permission to use me.")
 SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This channel does not have permission to use me.")
 
-CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID', "ceph")
-CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
-CLUSTER_ALIASES = [i.lower() for i in os.getenv('CLUSTER_ALIASES', "all").split()]
+CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID', "ceph").strip().lower()
+CLUSTER_ALIASES = [i.lower() for i in os.getenv('CLUSTER_ALIASES', "all").strip().split()]
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts')
 
@@ -39,8 +38,7 @@ CEPH_CONF = os.getenv('CEPH_CONF', "/etc/ceph/ceph.conf")
 CEPH_USER = os.getenv('CEPH_USER', "client.admin")
 CEPH_KEYRING = os.getenv('CEPH_KEYRING', "/etc/ceph/ceph.client.admin.keyring")
 
-HELP_MSG = os.getenv('HELP_MSG', "status, osd stat, mon, stat, pg stat, down osds, blocked requests")
-HELP_MSG = CEPH_CLUSTER_ID + ": " + HELP_MSG
+HELP_MSG = CEPH_CLUSTER_ID + ": " + os.getenv('HELP_MSG', "status, osd stat, mon, stat, pg stat, down osds, blocked requests").strip()
 TOO_LONG = os.getenv("TOO_LONG", 20)
 TOO_LONG_MSG = "Long responses get threaded."
 
