@@ -23,7 +23,7 @@ spec:
           command:
             - /bin/sh
           args:
-            - /cephbot/container/entrypoint.sh
+            - /cephbot/kubernetes/entrypoint.sh
             - quiet
           volumeMounts:
             - name: cephbot
