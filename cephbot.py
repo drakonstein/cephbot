@@ -31,7 +31,7 @@ SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This cha
 
 CEPH_CLUSTER_ID = os.getenv('CEPH_CLUSTER_ID', "ceph")
 CEPH_CLUSTER_ID = CEPH_CLUSTER_ID.strip().lower()
-CLUSTER_ALIASES = [os.getenv('CLUSTER_ALIASES', "all").split().lower()]
+CLUSTER_ALIASES = [alias.lower() for alias in os.getenv('CLUSTER_ALIASES', "all").split()]
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts')
 
@@ -125,12 +125,16 @@ def ceph_command(command, thread):
 def handle_command(command, channel, user, thread):
   show_cluster_id = False
   command = command.strip().lower()
-  if command.startswith(CEPH_CLUSTER_ID) or command.startswith(tuple(CLUSTER_ALIASES)):
-    if command.startswith(CEPH_CLUSTER_ID):
-      command = command.split(CEPH_CLUSTER_ID)[1].strip().lower()
-    elif command.startswith(tuple(CLUSTER_ALIASES)):
-      show_cluster_id = True
-        command = list(filter(command.startswith, CLUSTER_ALIASES))[0].strip().lower()
+  cluster_match = False
+  if command.startswith(CEPH_CLUSTER_ID):
+    cluster_match = True
+    alias = CEPH_CLUSTER_ID
+  elif command.startswith(tuple(CLUSTER_ALIASES)):
+    cluster_match = True
+    show_cluster_id = True
+    alias = list(filter(command.startswith, CLUSTER_ALIASES))[0].strip().lower()
+  if cluster_match:
+    command = command.split(alias)[1].strip().lower()
     if SLACK_USER_IDS and not user in SLACK_USER_IDS:
       channel_response = None
       user_response = SLACK_USER_ACCESS_DENIED
