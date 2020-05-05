@@ -131,7 +131,7 @@ def handle_command(command, channel, user, thread):
     cluster_match = True
     show_cluster_id = True
   if cluster_match:
-    command = command.split(cluster)[1].strip().lower()
+    command = command.split(cluster, 1)[1].strip().lower()
     if SLACK_USER_IDS and not user in SLACK_USER_IDS:
       channel_response = None
       user_response = SLACK_USER_ACCESS_DENIED
@@ -190,7 +190,7 @@ def parse_slack_output(slack_rtm_output):
         thread = None
       if output and 'text' in output and AT_BOT in output['text']:
         # return text after the @ mention, whitespace removed
-        return output['text'].split(AT_BOT)[1].strip().lower(), \
+        return output['text'].split(AT_BOT, 1)[1].strip().lower(), \
              output['channel'], output['user'], thread
       # Direct Messages have a channel that starts with a 'D'
       elif output and 'text' in output and output['channel'].startswith('D') and output['user'] != SLACK_BOT_ID:

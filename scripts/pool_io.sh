@@ -3,14 +3,11 @@
 [[ ! -z "$2" ]] && user="--name $2" || user=
 [[ ! -z "$3" ]] && keyring="--keyring $3" || keyring=
 if [[ -z "$4" ]]; then
-  stats=$(ceph $conf $user $keyring osd pool stats | grep -B2 'io' | grep -v '^$')
-  output=$(echo "$stats" | grep -B2 "MB\|GB" | grep -v '^--$')
+  stats=$(ceph $conf $user $keyring osd pool stats | grep 'pool\|op/s\|wr\|rd\|client\|recovery' | grep -B1 'op/s\|wr\|rd\|client\|recovery' | grep -v '^$\|^--$')
   if [[ -z "$stats" ]]; then
     echo "nothing is going on"
-  elif [[ -z "$output" ]]; then
-    echo "not much is going on"
   else
-    echo "$output"
+    echo "$stats"
   fi
 else
   ceph $conf $user $keyring osd pool stats $4
