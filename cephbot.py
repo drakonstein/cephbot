@@ -60,7 +60,7 @@ def ceph_command(command, thread):
   if command == "blocked requests":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/blocked_requests.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/blocked_requests.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command == "down osds" or command == "down osd":
@@ -68,16 +68,22 @@ def ceph_command(command, thread):
   elif command == "io":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/io.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command.startswith("pool io"):
     opt_pool = command.split("pool io")[1].strip().lower()
     run_mon_command = False
-    try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', CEPH_CONF, CEPH_USER, CEPH_KEYRING, opt_pool])
-    except:
-      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+    if opt_pool == None:
+      try:
+        output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING])
+      except:
+        return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+    else:
+      try:
+        output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING, '--pool', opt_pool])
+      except:
+        return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   else:
     cmd = {"prefix":command, "format":"plain"}
   if run_mon_command:

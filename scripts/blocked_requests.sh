@@ -1,8 +1,46 @@
 #!/bin/bash
+conf="$CEPH_CONF"
+user="$CEPH_USER"
+keyring="$CEPH_KEYRING"
 
-[[ ! -z "$1" ]] && conf="--conf $1" || conf=
-[[ ! -z "$2" ]] && user="--name $2" || user=
-[[ ! -z "$3" ]] && keyring="--keyring $3" || keyring=
+for i in $@; do
+  case i in
+    -c|--conf)
+      variable=conf
+    ;;
+    -u|--user|-n|--name)
+      variable=user
+    ;;
+    -k|--keyring)
+      variable=keyring
+    ;;
+    *)
+      case $variable in
+        conf)
+          conf="$i"
+          variable=
+        ;;
+        user)
+          user="$i"
+          variable=
+        ;;
+        keyring)
+          keyring="$i"
+          variable=
+        ;;
+        *)
+          echo "Unknown option"
+          exit 1
+        ;;
+      esac
+    ;;
+  esac
+done
+
+[[ -n "$conf" ]] && conf="--conf $conf" || conf=
+[[ -n "$user" ]] && user="--name $user" || user=
+[[ -n "$keyring" ]] && keyring="--keyring $keyring" || keyring=
+
 output=$(ceph $conf $user $keyring health detail | grep 'ops are blocked' | sort -nrk6 | sed 's/ ops/+ops/' | sed 's/ sec/+sec/' | column -t -s'+')
 if [[ -z "$output" ]]; then
     echo "No blocked requests"
