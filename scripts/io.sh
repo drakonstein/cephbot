@@ -3,19 +3,19 @@ conf="$CEPH_CONF"
 user="$CEPH_USER"
 keyring="$CEPH_KEYRING"
 
-for i in $@; do
-  case i in
-    -c|--conf)
+for i in "$@"; do
+  case "$i" in
+    --conf|-c)
       variable=conf
     ;;
-    -u|--user|-n|--name)
+    --user|-u|--name|-n)
       variable=user
     ;;
-    -k|--keyring)
+    --keyring|-k)
       variable=keyring
     ;;
     *)
-      case $variable in
+      case "$variable" in
         conf)
           conf="$i"
           variable=
@@ -36,6 +36,10 @@ for i in $@; do
     ;;
   esac
 done
+if [[ -n "$variable" ]]; then
+  echo "You invoked, but did not supply the $variable."
+  exit 1
+fi
 
 [[ -n "$conf" ]] && conf="--conf $conf" || conf=
 [[ -n "$user" ]] && user="--name $user" || user=
