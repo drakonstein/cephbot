@@ -6,7 +6,7 @@ else
 fi
 
 if [ -n "$(command -v yum)" ]; then
-  cmd="yum -y install python-pip"
+  cmd="yum -y install python-pip python2"
 elif [ -n "$(command -v apt-get)" ]; then
   cmd="apt-get -y install python-pip"
 fi
