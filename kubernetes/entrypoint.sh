@@ -6,11 +6,11 @@ else
 fi
 
 if [ -n "$(command -v yum)" ]; then
-  cmd="yum -y install python-pip python2"
+  cmd="yum -y install python-pip"
 elif [ -n "$(command -v apt-get)" ]; then
   cmd="apt-get -y install python-pip"
 fi
-cmd2="python2 -m pip --disable-pip-version-check install -r /cephbot/requirements.txt"
+cmd2="python3 -m pip --disable-pip-version-check install -r /cephbot/requirements.txt"
 if $quiet; then
   echo "Output of the following commands has been suppressed."
   echo "$cmd"
@@ -24,4 +24,4 @@ else
   $cmd2
 fi
 
-python2 /cephbot/cephbot.py
+python3 /cephbot/cephbot.py

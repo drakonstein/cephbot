@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
 import os
 import time
@@ -118,9 +118,9 @@ def ceph_command(command, thread):
       output = "All OSDs are up."
 
   output = output.strip()
-  if output and ( len(output.split('\n')) < TOO_LONG or thread ):
+  if output and ( len(output.splitlines()) < int(TOO_LONG) or thread ):
     return output, None
-  elif output and len(output.split('\n')) >= TOO_LONG:
+  elif output and len(output.splitlines()) >= int(TOO_LONG):
     return TOO_LONG_MSG, output
   else:
     return "Something went wrong while executing '" + command + "' on the Ceph cluster.", None
