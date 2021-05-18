@@ -166,7 +166,7 @@ def handle_command(command, channel, user, thread):
   # Direct Messages have a channel that starts with a 'D'
   if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
     if show_cluster_id:
-      channel_response = CEPH_CLUSTER_ID + ": " + channel_response
+      channel_response = CEPH_CLUSTER_ID + ": " + str(channel_response)
     if thread:
       slack_client.api_call("chat.postMessage", channel=channel, thread_ts=thread, text=channel_response, as_user=True)
     else:
