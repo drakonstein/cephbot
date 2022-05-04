@@ -84,6 +84,12 @@ def ceph_command(command, thread):
         output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING, '--pool', opt_pool])
       except:
         return "Something went wrong while executing " + command + " on the Ceph cluster.", None
+  elif command.startswith("health detail"):
+    run_mon_command = False
+    try:
+      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/health_detail.sh', '--conf', CEPH_CONF, '--user', CEPH_USER, '--keyring', CEPH_KEYRING])
+    except:
+      return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   else:
     cmd = {"prefix":command, "format":"plain"}
   if run_mon_command:
