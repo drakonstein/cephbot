@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: cephbot
-          image: ceph/ceph:v14.2.8
+          image: quay.io/ceph/ceph:v16.2.9
           command:
           command:
             - /bin/sh
