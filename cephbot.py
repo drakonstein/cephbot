@@ -1,8 +1,7 @@
 #!/usr/bin/python3
 
 import os
-import time
-from slackclient import SlackClient
+from slack_sdk.rtm_v2 import RTMClient
 import rados
 import json
 import subprocess
@@ -45,8 +44,8 @@ TOO_LONG_MSG = "Long responses get threaded."
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
 
-# instantiate Slack & Twilio clients
-slack_client = SlackClient(SLACK_BOT_TOKEN)
+rtm = RTMClient(token=SLACK_BOT_TOKEN)
+
 
 def ceph_command(command, thread):
   cluster = rados.Rados(conffile=CEPH_CONF, conf=dict(keyring = CEPH_KEYRING), name=CEPH_USER)
@@ -133,92 +132,99 @@ def ceph_command(command, thread):
     return "Something went wrong while executing '" + command + "' on the Ceph cluster.", None
 
 
-def handle_command(command, channel, user, thread):
-  show_cluster_id = False
-  command = command.strip().lower()
-  cluster = command.split()[0]
-  cluster_match = False
-  if cluster == CEPH_CLUSTER_ID:
-    cluster_match = True
-  elif cluster in CLUSTER_ALIASES:
-    cluster_match = True
-    show_cluster_id = True
-  if cluster_match:
-    command = command.split(cluster, 1)[1].strip().lower()
-    if SLACK_USER_IDS and not user in SLACK_USER_IDS:
-      channel_response = None
-      user_response = SLACK_USER_ACCESS_DENIED
-    elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-      channel_response = SLACK_CHANNEL_ACCESS_DENIED
-      user_response = None
-    elif command.startswith(HELP):
-      channel_response = HELP_MSG
-      user_response = None
-    else:
-      channel_response, user_response = ceph_command(command, thread)
-  elif command.startswith(HELP):
-    if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
-      channel_response = None
-      user_response = None
-    elif SLACK_USER_IDS and not user in SLACK_USER_IDS:
-      channel_response = None
-      user_response = None
-    else:
-      channel_response = HELP_MSG
-      user_response = None
-  else:
-    return
-
-  response = None
-  # Direct Messages have a channel that starts with a 'D'
-  if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
-    if show_cluster_id:
-      channel_response = CEPH_CLUSTER_ID + ": " + channel_response
-    if thread:
-      slack_client.api_call("chat.postMessage", channel=channel, thread_ts=thread, text=channel_response, as_user=True)
-    else:
-      response = slack_client.api_call("chat.postMessage", channel=channel, text=channel_response, as_user=True)
-
-  
-  if user_response:
-    if channel_response and channel_response == TOO_LONG_MSG and response:
-      thread = response['ts']
+@rtm.on("message")
+def parse_slack(client: RTMClient, event: dict):
+  for_cephbot = False
+  if 'text' in event:
+    command = event['text']
+    channel = event['channel']
+    user = event['user']
+    if 'thread_ts' in event:
+      thread = event['thread_ts']
     else:
       thread = None
-    if show_cluster_id:
-      user_response = CEPH_CLUSTER_ID + ": " + user_response
-    if thread:
-      slack_client.api_call("chat.postMessage", channel=channel, thread_ts=thread, text=user_response, as_user=True)
+    if AT_BOT in command:
+      for_cephbot = True
+      command = command.split(AT_BOT, 1)[1]
+    elif channel.startswith('D') and user != SLACK_BOT_ID:
+      for_cephbot = True
+
+  if for_cephbot:
+    show_cluster_id = False
+    command = command.strip().lower()
+    cluster = command.split()[0]
+    cluster_match = False
+    if cluster == CEPH_CLUSTER_ID:
+      cluster_match = True
+    elif cluster in CLUSTER_ALIASES:
+      cluster_match = True
+      show_cluster_id = True
+
+    if cluster_match:
+      command = command.split(cluster, 1)[1].strip().lower()
+      if SLACK_USER_IDS and not user in SLACK_USER_IDS:
+        channel_response = None
+        user_response = SLACK_USER_ACCESS_DENIED
+      elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+        channel_response = SLACK_CHANNEL_ACCESS_DENIED
+        user_response = None
+      elif command.startswith(HELP):
+        channel_response = HELP_MSG
+        user_response = None
+      else:
+        channel_response, user_response = ceph_command(command, thread)
+    elif command.startswith(HELP):
+      if SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+        channel_response = None
+        user_response = None
+      elif SLACK_USER_IDS and not user in SLACK_USER_IDS:
+        channel_response = None
+        user_response = None
+      else:
+        channel_response = HELP_MSG
+        user_response = None
     else:
-      slack_client.api_call("chat.postMessage", channel=user, text=user_response, as_user=True)
+      channel_response = None
+      user_response = None
+    response = None
 
+    # Direct Messages have a channel that starts with a 'D'
+    if channel_response and not ( channel_response and channel.startswith('D') and channel_response == TOO_LONG_MSG ):
+      if show_cluster_id:
+        channel_response = CEPH_CLUSTER_ID + ": " + channel_response
+      if thread:
+        client.web_client.chat_postMessage(
+          channel=channel, 
+          thread_ts=thread, 
+          text=channel_response, 
+          as_user=True
+        )
+      else:
+        response = client.web_client.chat_postMessage(channel=channel, text=channel_response, as_user=True)
 
-def parse_slack_output(slack_rtm_output):
-  output_list = slack_rtm_output
-  if output_list and len(output_list) > 0:
-    for output in output_list:
-      if output and 'thread_ts' in output:
-        thread = output['thread_ts']
+    if user_response:
+      if channel_response and channel_response == TOO_LONG_MSG and response:
+        thread = response['ts']
       else:
         thread = None
-      if output and 'text' in output and AT_BOT in output['text']:
-        # return text after the @ mention, whitespace removed
-        return output['text'].split(AT_BOT, 1)[1].strip().lower(), \
-             output['channel'], output['user'], thread
-      # Direct Messages have a channel that starts with a 'D'
-      elif output and 'text' in output and output['channel'].startswith('D') and output['user'] != SLACK_BOT_ID:
-        return output['text'], output['channel'], output['user'], thread
-  return None, None, None, None
+      if show_cluster_id:
+        user_response = CEPH_CLUSTER_ID + ": " + user_response
+      if thread:
+        client.web_client.chat_postMessage(
+          channel=channel, 
+          thread_ts=thread, 
+          text=user_response, 
+          as_user=True
+        )
+      else:
+        client.web_client.chat_postMessage(
+          channel=user, 
+          text=user_response, 
+          as_user=True
+        )
 
-
-if __name__ == "__main__":
-  READ_WEBSOCKET_DELAY = 1 # 1 second delay between reading from firehose
-  if slack_client.rtm_connect():
-    print("CephBot connected and running!")
-    while True:
-      command, channel, user, thread = parse_slack_output(slack_client.rtm_read())
-      if command and channel and user:
-        handle_command(command, channel, user, thread)
-      time.sleep(READ_WEBSOCKET_DELAY)
-  else:
-    print("Connection failed. Invalid Slack token or bot ID?")
+try:
+  rtm.start()
+except:
+  print("Connection failed. Invalid Slack token or bot ID?")
+  exit()
