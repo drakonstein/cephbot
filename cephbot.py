@@ -31,7 +31,7 @@ SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This cha
 
 CEPH_CLUSTERS = {}
 ceph_cluster_ids_regex = re.compile(r'^CEPH_CLUSTER_')
-for key, val in os.environ.items():
+for key, value in os.environ.items():
   if ceph_cluster_ids_regex.search(key):
     cluster = value.strip().lower().split(":")
     CEPH_CLUSTERS[cluster[0].strip()] = cluster[1].strip()
