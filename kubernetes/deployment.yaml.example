@@ -52,7 +52,7 @@ spec:
               value: ""
             - name: SCRIPTS_FOLDER
               value: "/cephbot/scripts"
-            - name: CEPH_CLUSTER_IDS
+            - name: CEPH_CLUSTER_ID
               value: "ceph: all prod"
             - name: CEPH_CONF
               value: "/conf/CLUSTER.conf"

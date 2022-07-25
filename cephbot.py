@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import re
 from slack_sdk.rtm_v2 import RTMClient
 import rados
 import json
@@ -28,7 +29,12 @@ if not SLACK_CHANNEL_IDS:
 SLACK_USER_ACCESS_DENIED = os.getenv('SLACK_USER_ACCESS_DENIED', "You do not have permission to use me.")
 SLACK_CHANNEL_ACCESS_DENIED = os.getenv('SLACK_CHANNEL_ACCESS_DENIED', "This channel does not have permission to use me.")
 
-CEPH_CLUSTER_IDS = os.getenv('CEPH_CLUSTER_IDS', "ceph: all").strip().lower()
+CEPH_CLUSTERS = {}
+ceph_cluster_ids_regex = re.compile(r'^CEPH_CLUSTER_')
+for key, val in os.environ.items():
+  if ceph_cluster_ids_regex.search(key):
+    cluster = value.strip().lower().split(":")
+    CEPH_CLUSTERS[cluster[0].strip()] = cluster[1].strip()
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts')
 
@@ -44,10 +50,6 @@ ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in
 
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
-CEPH_CLUSTERS = {}
-for cluster in CEPH_CLUSTER_IDS.split(","):
-  cluster = cluster.split(":")
-  CEPH_CLUSTERS[cluster[0].strip()] = cluster[1].strip()
 
 rtm = RTMClient(token=SLACK_BOT_TOKEN)
 
