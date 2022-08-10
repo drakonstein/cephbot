@@ -25,6 +25,13 @@ spec:
           args:
             - /cephbot/kubernetes/entrypoint.sh
             - quiet
+          readinessProbe:
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            exec:
+              command:
+              - ls
+              - /ready.txt
           volumeMounts:
             - name: cephbot
               mountPath: /cephbot
@@ -60,6 +67,8 @@ spec:
               value: "client.cephbot"
             - name: CEPH_KEYRING
               value: "/conf/CLUSTER.CEPH_USER.keyring"
+            - name: READINESS_FILE
+              value: "/ready.txt"
             - name: HELP_MSG
               value: "status, health, io, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump, pool io. Aliases: ALIASES"
             - name: TOO_LONG

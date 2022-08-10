@@ -17,6 +17,8 @@ The server this is running on needs to have ceph installed (for bash scripts in 
 
 Cephbot is now capable of communicating with multiple clusters in one instance. It will iterate through all environment variables that start with "CEPH_CLUSTER_". The value of the variables should be in the format "cluster: alias1 alias2 alias3". For CEPH_CONF and CEPH_KEYRING you can use CLUSTER as a literal string in the variable that will be replaced by the cluster name specified in CEPH_CLUSTER variables. If you are not running this in kubernetes, I would run it in a screen with the environment variables set up. Each instance can be configured for 1 or all of your clusters.
 
+Using the EVENTS_* variables you can configure cephbot to monitor those channels where zabbix, alertmanager, etc place notifications and it will parse messages in EVENTS_SLACK_CHANNELS from EVENTS_SLACK_IDS that include the EVENTS_TRIGGER for the cluster names and thread the EVENTS_COMMANDS in response to the event. This will give additional cluster information in slack in response to any events in the ceph cluster.
+
 ## Execution
 Update the .env files with your values. Then execute the following:
 
