@@ -292,7 +292,7 @@ def slack_parse(client: RTMClient, event: dict):
           )
 
 try:
-  rtm.connect()
+  rtm.start()
 except:
   print("Connection failed. Invalid Slack token or bot ID?")
   exit()
