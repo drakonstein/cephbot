@@ -49,6 +49,14 @@ spec:
 # SLACK_BOT_ID is required
             - name: SLACK_BOT_ID
               value: ""
+            - name: EVENTS_SLACK_IDS
+              value: ""
+            - name: EVENTS_SLACK_CHANNELS
+              value: ""
+            - name: EVENTS_TRIGGER
+              value: "FIRING"
+            - name: EVENTS_COMMANDS
+              value: "health, io, down osds, blocked requests"
             - name: SLACK_USER_ACCESS_DENIED
               value: "You do not have permission to use me."
             - name: SLACK_USER_IDS
