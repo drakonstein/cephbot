@@ -69,11 +69,11 @@ spec:
               value: "/cephbot/scripts"
             - name: CEPH_CLUSTER_ID
               value: "ceph: all prod"
-            - name: CEPH_CONF
+            - name: CEPH_CONF_FILE
               value: "/conf/CLUSTER.conf"
             - name: CEPH_USER
               value: "client.cephbot"
-            - name: CEPH_KEYRING
+            - name: CEPH_KEYRING_FILE
               value: "/conf/CLUSTER.CEPH_USER.keyring"
             - name: READINESS_FILE
               value: "/ready.txt"
