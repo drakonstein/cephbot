@@ -72,16 +72,8 @@ rtm = RTMClient(token=SLACK_BOT_TOKEN)
 
 
 def ceph_command(CLUSTER, command, thread):
-  ceph_conf = CEPH_CONF
-  if "CLUSTER" in ceph_conf:
-    ceph_conf = ceph_conf.replace("CLUSTER", CLUSTER)
-
-  ceph_keyring = CEPH_KEYRING
-  if "CLUSTER" in ceph_keyring:
-    ceph_keyring = ceph_keyring.replace("CLUSTER", CLUSTER)
-  if "CEPH_USER" in ceph_keyring:
-    ceph_keyring = ceph_keyring.replace("CEPH_USER", CEPH_USER)
-
+  ceph_conf = CEPH_CONF.replace("CLUSTER", CLUSTER)
+  ceph_keyring = CEPH_KEYRING.replace("CLUSTER", CLUSTER).replace("CEPH_USER", CEPH_USER)
 
   cluster = rados.Rados(conffile=ceph_conf, conf=dict(keyring = ceph_keyring), name=CEPH_USER)
   run_mon_command = True
@@ -180,7 +172,7 @@ def slack_connected():
 def slack_parse(client: RTMClient, event: dict):
   events_run = False
   cluster_match = False
-  clusters_matched = {}
+  clusters_matched = []
   
   if 'text' in event:
     command = event['text'].strip().lower()
@@ -227,15 +219,14 @@ def slack_parse(client: RTMClient, event: dict):
     if cluster_match:
       command = command.split(cluster, 1)[1].strip().lower()
 
-  commands = {}
+  commands = []
   if events_run:
     commands = EVENTS_COMMANDS
   else:
     commands.append(command)
 
-
-  for command in commands:
-    for CLUSTER in clusters_matched:
+  for CLUSTER in clusters_matched:
+    for command in commands:
       channel_response = None
       user_response = None
       if SLACK_USER_IDS and not user in SLACK_USER_IDS:
