@@ -124,10 +124,11 @@ def ceph_command(CLUSTER, command, thread):
   if run_mon_command:
     try:
       ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
-      output = output.decode('utf-8')
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   cluster.shutdown()
+
+  output = output.decode('utf-8').strip()
 
   if command == "down osds" or command == "down osd":
     output = json.loads(output)
