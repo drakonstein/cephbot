@@ -53,9 +53,9 @@ for key, value in os.environ.items():
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts')
 
-CEPH_CONF = os.getenv('CEPH_CONF', "/etc/ceph/ceph.conf")
+CEPH_CONF = os.getenv('CEPH_CONF_FILE', "/etc/ceph/ceph.conf")
 CEPH_USER = os.getenv('CEPH_USER', "client.admin")
-CEPH_KEYRING = os.getenv('CEPH_KEYRING', "/etc/ceph/ceph.client.admin.keyring")
+CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/ceph.client.admin.keyring")
 
 READINESS_FILE = os.getenv('READINESS_FILE', "~/ready.txt")
 

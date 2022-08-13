@@ -1,7 +1,7 @@
 #!/bin/bash
-conf="$CEPH_CONF"
+conf="$CEPH_CONF_FILE"
 user="$CEPH_USER"
-keyring="$CEPH_KEYRING"
+keyring="$CEPH_KEYRING_FILE"
 
 for i in "$@"; do
   case "$i" in
