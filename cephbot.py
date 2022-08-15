@@ -13,10 +13,25 @@ if SLACK_BOT_TOKEN == '':
   print("SLACK_BOT_TOKEN is not defined. This is needed to open a connection to the Slack API.")
   exit()
 
-SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '')
+SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '').strip().lower()
 if SLACK_BOT_ID == '':
   print("SLACK_BOT_ID is not defined. This is needed to know when cephbot should listen.")
   exit()
+
+EVENTS_SLACK_IDS_ = os.getenv('EVENTS_SLACK_IDS', None)
+if EVENTS_SLACK_IDS_:
+  EVENTS_SLACK_IDS = EVENTS_SLACK_IDS_.strip().split()
+EVENTS_SLACK_CHANNELS_ = os.getenv('EVENTS_SLACK_CHANNELS', None)
+if EVENTS_SLACK_CHANNELS_:
+  EVENTS_SLACK_CHANNELS = EVENTS_SLACK_CHANNELS_.strip().split()
+if EVENTS_SLACK_CHANNELS_ and EVENTS_SLACK_IDS_:
+  EVENTS_ENABLED = True
+else:
+  EVENTS_ENABLED = False
+  print("Either EVENTS_SLACK_CHANNELS or EVENTS_SLACK_IDS not set. No information will be added to alerting messages.")
+
+EVENTS_TRIGGER = os.getenv('EVENTS_TRIGGER', "FIRING").strip().lower()
+EVENTS_COMMANDS = os.getenv('EVENTS_COMMANDS', "health, io, down osds, blocked requests").strip().lower().split(", ")
 
 SLACK_USER_IDS = os.getenv('SLACK_USER_IDS', None)
 if not SLACK_USER_IDS:
@@ -38,9 +53,11 @@ for key, value in os.environ.items():
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts')
 
-CEPH_CONF = os.getenv('CEPH_CONF', "/etc/ceph/ceph.conf")
+CEPH_CONF = os.getenv('CEPH_CONF_FILE', "/etc/ceph/ceph.conf")
 CEPH_USER = os.getenv('CEPH_USER', "client.admin")
-CEPH_KEYRING = os.getenv('CEPH_KEYRING', "/etc/ceph/ceph.client.admin.keyring")
+CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/ceph.client.admin.keyring")
+
+READINESS_FILE = os.getenv('READINESS_FILE', "~/ready.txt")
 
 HELP_MSG = ": " + os.getenv('HELP_MSG', "status, osd stat, mon, stat, pg stat, down osds, blocked requests").strip()
 TOO_LONG = os.getenv("TOO_LONG", 20)
@@ -55,16 +72,8 @@ rtm = RTMClient(token=SLACK_BOT_TOKEN)
 
 
 def ceph_command(CLUSTER, command, thread):
-  ceph_conf = CEPH_CONF
-  if "CLUSTER" in ceph_conf:
-    ceph_conf = ceph_conf.replace("CLUSTER", CLUSTER)
-
-  ceph_keyring = CEPH_KEYRING
-  if "CLUSTER" in ceph_keyring:
-    ceph_keyring = ceph_keyring.replace("CLUSTER", CLUSTER)
-  if "CEPH_USER" in ceph_keyring:
-    ceph_keyring = ceph_keyring.replace("CEPH_USER", CEPH_USER)
-
+  ceph_conf = CEPH_CONF.replace("CLUSTER", CLUSTER)
+  ceph_keyring = CEPH_KEYRING.replace("CLUSTER", CLUSTER).replace("CEPH_USER", CEPH_USER)
 
   cluster = rados.Rados(conffile=ceph_conf, conf=dict(keyring = ceph_keyring), name=CEPH_USER)
   run_mon_command = True
@@ -115,10 +124,11 @@ def ceph_command(CLUSTER, command, thread):
   if run_mon_command:
     try:
       ret, output, errs = cluster.mon_command(json.dumps(cmd), b'', timeout=5)
-      output = output.decode('utf-8')
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   cluster.shutdown()
+
+  output = output.decode('utf-8').strip()
 
   if command == "down osds" or command == "down osd":
     output = json.loads(output)
@@ -153,33 +163,47 @@ def ceph_command(CLUSTER, command, thread):
     return "Something went wrong while executing '" + command + "' on " + CLUSTER + ".", None
 
 
+rtm.on("hello")
+def slack_connected():
+  f = open(READINESS_FILE, "w")
+  f.write("Slack connection made")
+  f.close()
+
 @rtm.on("message")
-def parse_slack(client: RTMClient, event: dict):
-  for_cephbot = False
+def slack_parse(client: RTMClient, event: dict):
+  events_run = False
+  cluster_match = False
+  clusters_matched = []
+  
   if 'text' in event:
-    command = event['text']
+    command = event['text'].strip().lower()
     channel = event['channel']
     user = event['user']
-    if AT_BOT in command:
-      for_cephbot = True
-      command = command.split(AT_BOT, 1)[1]
+    if EVENTS_ENABLED and user in EVENTS_SLACK_IDS and channel in EVENTS_SLACK_CHANNELS and EVENTS_TRIGGER in command:
+      for CLUSTER in CEPH_CLUSTERS:
+        if CLUSTER in command:
+          events_run = True
+          cluster_match = True
+          clusters_matched.append(CLUSTER)
+    elif AT_BOT in command:
+      command = command.split(AT_BOT, 1)[1].strip()
     elif channel.startswith('D') and user != SLACK_BOT_ID:
       for_cephbot = True
-
-  if for_cephbot:
-    if 'thread_ts' in event:
-      thread = event['thread_ts']
     else:
-      if ALWAYS_THREAD:
-        thread = event['ts']
-      else:
-        thread = None
-    show_cluster_id = ALWAYS_SHOW_CLUSTER_ID
+      return
+  else:
+    return
 
-    command = command.strip().lower()
+  if 'thread_ts' in event:
+    thread = event['thread_ts']
+  elif ALWAYS_THREAD or events_run:
+    thread = event['ts']
+  else:
+    thread = None
+  show_cluster_id = ALWAYS_SHOW_CLUSTER_ID
+
+  if not events_run:
     cluster = command.split()[0]
-    cluster_match = False
-    clusters_matched = []
     if command.startswith(HELP):
       clusters_matched = CEPH_CLUSTERS
     for CLUSTER in CEPH_CLUSTERS:
@@ -193,13 +217,19 @@ def parse_slack(client: RTMClient, event: dict):
             clusters_matched.append(CLUSTER)
             show_cluster_id = True
             break
-
     if cluster_match:
       command = command.split(cluster, 1)[1].strip().lower()
-    channel_response = None
-    user_response = None
 
-    for CLUSTER in clusters_matched:
+  commands = []
+  if events_run:
+    commands = EVENTS_COMMANDS
+  else:
+    commands.append(command)
+
+  for CLUSTER in clusters_matched:
+    for command in commands:
+      channel_response = None
+      user_response = None
       if SLACK_USER_IDS and not user in SLACK_USER_IDS:
         channel_response = None
         user_response = SLACK_USER_ACCESS_DENIED

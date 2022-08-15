@@ -25,6 +25,13 @@ spec:
           args:
             - /cephbot/kubernetes/entrypoint.sh
             - quiet
+          readinessProbe:
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            exec:
+              command:
+              - ls
+              - /ready.txt
           volumeMounts:
             - name: cephbot
               mountPath: /cephbot
@@ -42,6 +49,14 @@ spec:
 # SLACK_BOT_ID is required
             - name: SLACK_BOT_ID
               value: ""
+            - name: EVENTS_SLACK_IDS
+              value: ""
+            - name: EVENTS_SLACK_CHANNELS
+              value: ""
+            - name: EVENTS_TRIGGER
+              value: "FIRING"
+            - name: EVENTS_COMMANDS
+              value: "health, io, down osds, blocked requests"
             - name: SLACK_USER_ACCESS_DENIED
               value: "You do not have permission to use me."
             - name: SLACK_USER_IDS
@@ -54,12 +69,14 @@ spec:
               value: "/cephbot/scripts"
             - name: CEPH_CLUSTER_ID
               value: "ceph: all prod"
-            - name: CEPH_CONF
+            - name: CEPH_CONF_FILE
               value: "/conf/CLUSTER.conf"
             - name: CEPH_USER
               value: "client.cephbot"
-            - name: CEPH_KEYRING
+            - name: CEPH_KEYRING_FILE
               value: "/conf/CLUSTER.CEPH_USER.keyring"
+            - name: READINESS_FILE
+              value: "/ready.txt"
             - name: HELP_MSG
               value: "status, health, io, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump, pool io. Aliases: ALIASES"
             - name: TOO_LONG
