@@ -180,36 +180,57 @@ def ceph_command(CLUSTER, command, thread):
 
 @slackApp.event("message")
 def slack_parse(event: dict, say):
+  for_cephbot = False
   events_run = False
   cluster_match = False
   clusters_matched = []
+  check_thread = False
+
+  if 'thread_ts' in event:
+    thread = event['thread_ts']
+    check_thread = True
+  elif ALWAYS_THREAD:
+    thread = event['ts']
+  else:
+    thread = None
+  show_cluster_id = ALWAYS_SHOW_CLUSTER_ID
 
   if 'text' in event:
     command = event['text'].strip().lower()
     channel = event['channel']
     user = event['user']
-    if EVENTS_ENABLED and user in EVENTS_SLACK_IDS and channel in EVENTS_SLACK_CHANNELS and EVENTS_TRIGGER in command:
+    if user == SLACK_BOT_ID:
+      return
+    elif EVENTS_ENABLED and user in EVENTS_SLACK_IDS and channel in EVENTS_SLACK_CHANNELS and EVENTS_TRIGGER in command:
       for CLUSTER in CEPH_CLUSTERS:
         if CLUSTER in command:
+          for_cephbot = True
           events_run = True
           cluster_match = True
           clusters_matched.append(CLUSTER)
+          if thread == None:
+            thread = event['ts']
     elif AT_BOT in command:
-      command = command.split(AT_BOT, 1)[1].strip()
-    elif ( event['channel_type'] == 'im' or channel.startswith('D') ) and user != SLACK_BOT_ID:
       for_cephbot = True
+      command = command.split(AT_BOT, 1)[1].strip()
+    elif event['channel_type'] == 'im' or channel.startswith('D'):
+      for_cephbot = True
+    elif check_thread:
+      messages = handler.app.client.conversations_replies(channel=channel, inclusive=True, ts=thread)
+      for message in messages.data['messages']:
+        if message['user'].lower() == SLACK_BOT_ID:
+          for_cephbot = True
+          break
+        elif AT_BOT in message['text'].lower():
+          for_cephbot = True
+          break
     else:
       return
   else:
     return
 
-  if 'thread_ts' in event:
-    thread = event['thread_ts']
-  elif ALWAYS_THREAD or events_run:
-    thread = event['ts']
-  else:
-    thread = None
-  show_cluster_id = ALWAYS_SHOW_CLUSTER_ID
+  if not for_cephbot:
+    return
 
   if not events_run:
     cluster = command.split()[0]
