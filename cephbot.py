@@ -2,7 +2,9 @@
 
 import os
 import re
-from slack_sdk.rtm_v2 import RTMClient
+from slack_bolt import App
+from slack_bolt.adapter.socket_mode import SocketModeHandler
+from flask import Flask, make_response
 import rados
 import json
 import subprocess
@@ -12,6 +14,11 @@ SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN', '')
 if SLACK_BOT_TOKEN == '':
   print("SLACK_BOT_TOKEN is not defined. This is needed to open a connection to the Slack API.")
   exit()
+SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN', '')
+if SLACK_APP_TOKEN == '':
+  print("SLACK_APP_TOKEN is not defined. This is needed to open a connection to the Slack API.")
+  exit()
+
 
 SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '').strip().lower()
 if SLACK_BOT_ID == '':
@@ -68,7 +75,15 @@ ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
 
-rtm = RTMClient(token=SLACK_BOT_TOKEN)
+slackApp = App(token=SLACK_BOT_TOKEN)
+handler = SocketModeHandler(slackApp, SLACK_APP_TOKEN)
+flaskApp = Flask(__name__)
+
+@flaskApp.route("/health", methods=["GET"])
+def cephbot_health():
+  if handler.client is not None and handler.client.is_connected():
+    return make_response("OK", 200)
+  return makeresponse("Cephbot is inactive", 503)
 
 
 def ceph_command(CLUSTER, command, thread):
@@ -163,18 +178,12 @@ def ceph_command(CLUSTER, command, thread):
     return "Something went wrong while executing '" + command + "' on " + CLUSTER + ".", None
 
 
-rtm.on("hello")
-def slack_connected():
-  f = open(READINESS_FILE, "w")
-  f.write("Slack connection made")
-  f.close()
-
-@rtm.on("message")
-def slack_parse(client: RTMClient, event: dict):
+@slackApp.event("message")
+def slack_parse(event: dict, say):
   events_run = False
   cluster_match = False
   clusters_matched = []
-  
+
   if 'text' in event:
     command = event['text'].strip().lower()
     channel = event['channel']
@@ -187,7 +196,7 @@ def slack_parse(client: RTMClient, event: dict):
           clusters_matched.append(CLUSTER)
     elif AT_BOT in command:
       command = command.split(AT_BOT, 1)[1].strip()
-    elif channel.startswith('D') and user != SLACK_BOT_ID:
+    elif ( event['channel_type'] == 'im' or channel.startswith('D') ) and user != SLACK_BOT_ID:
       for_cephbot = True
     else:
       return
@@ -252,14 +261,14 @@ def slack_parse(client: RTMClient, event: dict):
           if not channel_response.startswith(CLUSTER):
             channel_response = CLUSTER + ": " + channel_response
         if thread:
-          client.web_client.chat_postMessage(
+          say(
             channel=channel,
             thread_ts=thread,
             text=channel_response,
             as_user=True
           )
         else:
-          response = client.web_client.chat_postMessage(channel=channel, text=channel_response, as_user=True)
+          response = say(channel=channel, text=channel_response, as_user=True)
 
       if user_response:
         if channel_response and channel_response == TOO_LONG_MSG and response:
@@ -270,21 +279,33 @@ def slack_parse(client: RTMClient, event: dict):
           if not channel_response.startswith(CLUSTER):
             user_response = CLUSTER + ": " + user_response
         if thread:
-          client.web_client.chat_postMessage(
+          say(
             channel=channel,
             thread_ts=thread,
             text=user_response,
             as_user=True
           )
         else:
-          client.web_client.chat_postMessage(
+          say(
             channel=user,
             text=user_response,
             as_user=True
           )
 
-try:
-  rtm.start()
-except:
-  print("Connection failed. Invalid Slack token or bot ID?")
-  exit()
+if __name__ == "__main__":
+  try:
+    handler.connect()
+  except:
+    print("Connection failed. Invalid Slack token or bot ID?")
+    exit()
+
+  if handler.client.is_connected():
+    f = open(READINESS_FILE, "w")
+    f.write("Slack connection made")
+    f.close()
+    flaskApp.run(port=8080)
+  else:
+    print("Connection failed or disconnected.")
+    exit()
+
+  print("Good-Bye")
