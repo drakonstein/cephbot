@@ -65,6 +65,7 @@ CEPH_USER = os.getenv('CEPH_USER', "client.admin")
 CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/ceph.client.admin.keyring")
 
 READINESS_FILE = os.getenv('READINESS_FILE', "~/ready.txt")
+FLASK_PORT = os.getenv('FLASK_PORT', "8080")
 
 HELP_MSG = ": " + os.getenv('HELP_MSG', "status, osd stat, mon, stat, pg stat, down osds, blocked requests").strip()
 TOO_LONG = os.getenv("TOO_LONG", 20)
@@ -321,7 +322,7 @@ if __name__ == "__main__":
     f = open(READINESS_FILE, "w")
     f.write("Slack connection made")
     f.close()
-    flaskApp.run(port=8080)
+    flaskApp.run(port=FLASK_PORT)
   else:
     print("Connection failed or disconnected.")
     exit()
