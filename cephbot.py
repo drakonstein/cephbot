@@ -104,7 +104,7 @@ def ceph_command(CLUSTER, command, thread):
   if command == "blocked requests":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/blocked_requests.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/bin/sh', SCRIPTS_FOLDER + '/blocked_requests.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command == "down osds" or command == "down osd":
@@ -112,7 +112,7 @@ def ceph_command(CLUSTER, command, thread):
   elif command == "io":
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/bin/sh', SCRIPTS_FOLDER + '/io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command.startswith("pool io"):
@@ -120,18 +120,18 @@ def ceph_command(CLUSTER, command, thread):
     run_mon_command = False
     if opt_pool == None:
       try:
-        output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
+        output = subprocess.check_output(['/usr/bin/timeout', '5', '/bin/sh', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
       except:
         return "Something went wrong while executing " + command + " on the Ceph cluster.", None
     else:
       try:
-        output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring, '--pool', opt_pool])
+        output = subprocess.check_output(['/usr/bin/timeout', '5', '/bin/sh', SCRIPTS_FOLDER + '/pool_io.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring, '--pool', opt_pool])
       except:
         return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   elif command.startswith("health detail"):
     run_mon_command = False
     try:
-      output = subprocess.check_output(['/usr/bin/timeout', '5', SCRIPTS_FOLDER + '/health_detail.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
+      output = subprocess.check_output(['/usr/bin/timeout', '5', '/bin/sh', SCRIPTS_FOLDER + '/health_detail.sh', '--conf', ceph_conf, '--user', CEPH_USER, '--keyring', ceph_keyring])
     except:
       return "Something went wrong while executing " + command + " on the Ceph cluster.", None
   else:
@@ -199,6 +199,7 @@ def slack_parse(event: dict, say):
     command = event['text'].strip().lower()
     channel = event['channel']
     user = event['user']
+
     if user == SLACK_BOT_ID:
       return
     elif EVENTS_ENABLED and user in EVENTS_SLACK_IDS and channel in EVENTS_SLACK_CHANNELS and EVENTS_TRIGGER in command:
@@ -224,10 +225,6 @@ def slack_parse(event: dict, say):
         elif AT_BOT in message['text'].lower():
           for_cephbot = True
           break
-    else:
-      return
-  else:
-    return
 
   if not for_cephbot:
     return

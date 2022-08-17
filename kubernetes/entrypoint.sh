@@ -26,7 +26,9 @@ if $quiet; then
   echo "done"
 else
   $cmd
+  echo "done"
   $cmd2
+  echo "done"
 fi
 
 python3 /cephbot/cephbot.py
