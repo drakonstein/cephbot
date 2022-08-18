@@ -2,8 +2,7 @@
 
 import os
 import re
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
+from slack_sdk.rtm_v2 import RTMClient
 from flask import Flask, make_response
 import rados
 import json
@@ -14,11 +13,6 @@ SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN', '')
 if SLACK_BOT_TOKEN == '':
   print("SLACK_BOT_TOKEN is not defined. This is needed to open a connection to the Slack API.")
   exit()
-SLACK_APP_TOKEN = os.getenv('SLACK_APP_TOKEN', '')
-if SLACK_APP_TOKEN == '':
-  print("SLACK_APP_TOKEN is not defined. This is needed to open a connection to the Slack API.")
-  exit()
-
 
 SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '').strip().lower()
 if SLACK_BOT_ID == '':
@@ -76,13 +70,12 @@ ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
 
-slackApp = App(token=SLACK_BOT_TOKEN)
-handler = SocketModeHandler(slackApp, SLACK_APP_TOKEN)
+rtm = RTMClient(token=SLACK_BOT_TOKEN)
 flaskApp = Flask(__name__)
 
 @flaskApp.route("/health", methods=["GET"])
 def cephbot_health():
-  if handler.client is not None and handler.client.is_connected():
+  if rtm is not None and rtm.is_connected():
     return make_response("OK", 200)
   return makeresponse("Cephbot is inactive", 503)
 
@@ -179,8 +172,8 @@ def ceph_command(CLUSTER, command, thread):
     return "Something went wrong while executing '" + command + "' on " + CLUSTER + ".", None
 
 
-@slackApp.event("message")
-def slack_parse(event: dict, say):
+@rtm.on("message")
+def slack_parse(client: RTMClient, event: dict):
   for_cephbot = False
   events_run = False
   cluster_match = False
@@ -215,10 +208,10 @@ def slack_parse(event: dict, say):
     elif AT_BOT in command:
       for_cephbot = True
       command = command.split(AT_BOT, 1)[1].strip()
-    elif event['channel_type'] == 'im' or channel.startswith('D'):
+    elif channel.startswith('D'):
       for_cephbot = True
     elif check_thread:
-      messages = handler.app.client.conversations_replies(channel=channel, inclusive=True, ts=thread)
+      messages = client.web_client.conversations_replies(channel=channel, inclusive=True, ts=thread)
       for message in messages.data['messages']:
         if message['user'].lower() == SLACK_BOT_ID:
           for_cephbot = True
@@ -280,14 +273,14 @@ def slack_parse(event: dict, say):
           if not channel_response.startswith(CLUSTER):
             channel_response = CLUSTER + ": " + channel_response
         if thread:
-          say(
+          client.web_client.chat_postMessage(
             channel=channel,
             thread_ts=thread,
             text=channel_response,
             as_user=True
           )
         else:
-          response = say(channel=channel, text=channel_response, as_user=True)
+          response = client.web_client.chat_postMessage(channel=channel, text=channel_response, as_user=True)
 
       if user_response:
         if channel_response and channel_response == TOO_LONG_MSG and response:
@@ -298,14 +291,14 @@ def slack_parse(event: dict, say):
           if not channel_response.startswith(CLUSTER):
             user_response = CLUSTER + ": " + user_response
         if thread:
-          say(
+          client.web_client.chat_postMessage(
             channel=channel,
             thread_ts=thread,
             text=user_response,
             as_user=True
           )
         else:
-          say(
+          client.web_client.chat_postMessage(
             channel=user,
             text=user_response,
             as_user=True
@@ -313,12 +306,12 @@ def slack_parse(event: dict, say):
 
 if __name__ == "__main__":
   try:
-    handler.connect()
+    rtm.connect()
   except:
     print("Connection failed. Invalid Slack token or bot ID?")
     exit()
 
-  if handler.client.is_connected():
+  if rtm.is_connected():
     f = open(READINESS_FILE, "w")
     f.write("Slack connection made")
     f.close()
