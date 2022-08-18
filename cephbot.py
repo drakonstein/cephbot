@@ -214,7 +214,7 @@ def slack_parse(client: RTMClient, event: dict):
       command = command.split(AT_BOT, 1)[1].strip()
     elif channel.startswith('D'):
       for_cephbot = True
-    elif check_thread && SLACK_USER_TOKEN is not None:
+    elif check_thread and SLACK_USER_TOKEN is not None:
       messages = webClient.conversations_replies(channel=channel, inclusive=True, ts=thread)
       for message in messages.data['messages']:
         if message['user'].lower() == SLACK_BOT_ID:
