@@ -3,6 +3,7 @@
 import os
 import re
 from slack_sdk.rtm_v2 import RTMClient
+from slack_sdk import WebClient
 from flask import Flask, make_response
 import rados
 import json
@@ -13,6 +14,8 @@ SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN', '')
 if SLACK_BOT_TOKEN == '':
   print("SLACK_BOT_TOKEN is not defined. This is needed to open a connection to the Slack API.")
   exit()
+
+SLACK_USER_TOKEN = os.getenv('SLACK_USER_TOKEN', None)
 
 SLACK_BOT_ID = os.getenv('SLACK_BOT_ID', '').strip().lower()
 if SLACK_BOT_ID == '':
@@ -71,6 +74,7 @@ HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID + ">"
 
 rtm = RTMClient(token=SLACK_BOT_TOKEN)
+webClient = WebClient(token=SLACK_USER_TOKEN)
 flaskApp = Flask(__name__)
 
 @flaskApp.route("/health", methods=["GET"])
@@ -210,8 +214,8 @@ def slack_parse(client: RTMClient, event: dict):
       command = command.split(AT_BOT, 1)[1].strip()
     elif channel.startswith('D'):
       for_cephbot = True
-    elif check_thread:
-      messages = client.web_client.conversations_replies(channel=channel, inclusive=True, ts=thread)
+    elif check_thread && SLACK_USER_TOKEN is not None:
+      messages = webClient.conversations_replies(channel=channel, inclusive=True, ts=thread)
       for message in messages.data['messages']:
         if message['user'].lower() == SLACK_BOT_ID:
           for_cephbot = True
