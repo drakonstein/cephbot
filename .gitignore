@@ -1,3 +1,5 @@
+env.run
+
 # Config file
 kubernetes/deployment.yaml
 kubernetes/namespace.json
