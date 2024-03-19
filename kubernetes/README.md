@@ -1,16 +1,13 @@
 # cephbot
-Containerized version of Slack bot for Ceph
+Containerized version of cephbot
 
-I'm really excited to have this configured for kubernetes finally. It is so much nicer to not deal with this running in a screen. Thanks to @code4clouds for his help with this.
+I'm really excited to have this configured for kubernetes. It is so much nicer to not deal with this running in a screen. Thanks to @code4clouds for his help with this.
 
 This includes the files needed to configure cephbot in k8s and uses the official Ceph container to simplify configuration.
 
 If you're following the default examples in here you'll need to apply the various files like this.
 
 ``` bash
-# Create the namespace you are going to use
-kubectl create -f namespace.json
-
 # If you haven't created your keyring yet, you can do so with something like this.
 ceph auth get-or-create client.cephbot mon 'allow r' mgr 'allow r' > /etc/ceph/ceph.client.cephbot.keyring
 kubectl create secret generic cephbot-conf --from-file=/path/to/ceph.conf --from-file=/path/to/keyring

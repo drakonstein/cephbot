@@ -55,19 +55,22 @@ for key, value in os.environ.items():
   if ceph_cluster_ids_regex.search(key):
     CEPH_CLUSTERS[key.split("_")[2].strip().lower()] = value.strip().lower()
 
+if not CEPH_CLUSTERS:
+  CEPH_CLUSTERS['ceph'] = 'all'
+
 ERRORS_ONLY_STRS = os.getenv('ERRORS_ONLY_STRS', "ERRORS ERROR UNHEALTHY PROBLEMS PROBLEM").strip().lower()
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts/')
 
-CEPH_CONF = os.getenv('CEPH_CONF_FILE', "/etc/ceph/ceph.conf")
+CEPH_CONF = os.getenv('CEPH_CONF_FILE', "/etc/ceph/CLUSTER.conf")
 CEPH_USER = os.getenv('CEPH_USER', "client.admin")
-CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/ceph.client.admin.keyring")
+CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/CLUSTER.CEPH_USER.keyring")
 
 FLASK_PORT = os.getenv('FLASK_PORT', "8080")
 
 HELP_MSG = os.getenv('HELP_MSG', "health, health detail, status, osd stat, mon stat, pg stat, down osds, blocked requests, rgw stat").strip()
 TOO_LONG = os.getenv("TOO_LONG", 20)
-TOO_LONG_MSG = "Long responses get threaded."
+TOO_LONG_MSG = os.getenv("TOO_LONG_MSG", "Long responses get threaded.")
 ALWAYS_THREAD = os.getenv('ALWAYS_THREAD', 'false').lower() in ('true', '1', 't')
 ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in ('true', '1', 't')
 
