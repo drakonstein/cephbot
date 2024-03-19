@@ -1,1 +1,2 @@
-slack_sdk ~= 3.17.2
+slack_bolt ~= 1.14.3
+flask
