@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cephbot
-  namespace: ceph-mgt
+  namespace: default
   labels:
     app: cephbot
 spec:
@@ -49,44 +49,14 @@ spec:
 # SLACK_BOT_ID is required
             - name: SLACK_BOT_ID
               value: ""
-            - name: EVENTS_SLACK_IDS
-              value: ""
-            - name: EVENTS_SLACK_CHANNELS
-              value: ""
-            - name: EVENTS_TRIGGER
-              value: "FIRING"
-            - name: EVENTS_COMMANDS
-              value: "health, io, down osds, blocked requests"
-            - name: SLACK_USER_ACCESS_DENIED
-              value: "You do not have permission to use me."
-            - name: SLACK_USER_IDS
-              value: ""
-            - name: SLACK_CHANNEL_ACCESS_DENIED
-              value: "This channel does not have permission to use me."
-            - name: SLACK_CHANNEL_IDS
-              value: ""
-            - name: SCRIPTS_FOLDER
-              value: "/cephbot/scripts"
-            - name: CEPH_CLUSTER_ID
-              value: "ceph: all prod"
+            - name: CEPH_CLUSTER_ceph
+              value: "all prod"
             - name: CEPH_CONF_FILE
               value: "/conf/CLUSTER.conf"
             - name: CEPH_USER
               value: "client.cephbot"
             - name: CEPH_KEYRING_FILE
               value: "/conf/CLUSTER.CEPH_USER.keyring"
-            - name: READINESS_FILE
-              value: "/ready.txt"
-            - name: HELP_MSG
-              value: "status, health, io, osd stat, mon stat, pg stat, down osds, blocked requests, df, osd df, fs dump, pool io. Aliases: ALIASES"
-            - name: TOO_LONG
-              value: "20"
-            - name: TOO_LONG_MSG
-              value: "Long responses get threaded."
-            - name: ALWAYS_THREAD
-              value: "False"
-            - name: ALWAYS_SHOW_CLUSTER_ID
-              value: "False"
       initContainers:
         - name: git
           image: alpine/git
@@ -94,7 +64,7 @@ spec:
             - git
           args:
             - clone
-            - https://github.com/drakonstein/cephbot.git
+            - https://github.com/ceph/cephbot-slack.git
             - /cephbot
           volumeMounts:
             - name: cephbot
