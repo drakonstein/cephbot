@@ -44,9 +44,9 @@ EVENTS_COMMANDS="health, io, down osds, blocked requests"
 ```
 
 ### Ceph configuration
-For each ceph cluster you need to set up an environment variable with cluster name after "CEPH_CLUSTER_". The value of the variable are the aliases that the cluster will respond to. In this example the cluster's name is `ceph` and the alias is `all`.
+For each ceph cluster you need to set up an environment variable with cluster name after "CEPH_CLUSTER_". The value of the variable are the aliases that the cluster will respond to. In this example the cluster's name is `ceph` and the alias are `all` and `prod`.
 ``` bash
-CEPH_CLUSTER_ceph="all"
+CEPH_CLUSTER_ceph="all prod"
 ```
 Can use CLUSTER as a variable that will be replaced with the responding clusters name
 ``` bash
@@ -82,6 +82,10 @@ ALWAYS_SHOW_CLUSTER_ID=False
 Only report back if there is an unhealthy response from a cluster. Making it very easy to check overall health with large amounts of clusters.
 ``` bash
 ERRORS_ONLY_STRS="ERRORS ERROR UNHEALTHY PROBLEMS PROBLEM"
+```
+If you have channels or person's DMs you would like to be notified that Cephbot has been started/restarted. Add the IDs as a space delimited list here.
+``` bash
+CONNECTED_NOTIFICATION_CHANNELS=
 ```
 
 ## Multiple Clusters

@@ -56,7 +56,7 @@ for key, value in os.environ.items():
     CEPH_CLUSTERS[key.split("_")[2].strip().lower()] = value.strip().lower()
 
 if not CEPH_CLUSTERS:
-  CEPH_CLUSTERS['ceph'] = 'all'
+  CEPH_CLUSTERS['ceph'] = 'all prod'
 
 ERRORS_ONLY_STRS = os.getenv('ERRORS_ONLY_STRS', "ERRORS ERROR UNHEALTHY PROBLEMS PROBLEM").strip().lower()
 
@@ -77,6 +77,8 @@ ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in
 HELP = "help"
 AT_BOT = "<@" + SLACK_BOT_ID.lower() + ">"
 ERROR_PREFIX = "Something went wrong "
+
+CONNECTED_NOTIFICATION_CHANNELS = os.getenv('CONNECTED_NOTIFICATION_CHANNELS', None)
 
 # When reload is triggered, this value will be updated and the k8s health check will fail causing the pod to be restarted.
 RELOAD = "reload"
@@ -416,21 +418,13 @@ if __name__ == "__main__":
     exit()
 
   if rtm.is_connected():
-    try:
-      # Quick message to indicate an instance is up and running. This is sent to David Turner
-      # SIE Prod
-      rtm.web_client.chat_postMessage(
-        channel="U03EUHCHH32",
-        text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
-        as_user=True
-      )
-    except:
-      # SIE Test
-      rtm.web_client.chat_postMessage(
-        channel="U03NB4ULV1B",
-        text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
-        as_user=True
-      )
+    for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS:
+      try:
+        rtm.web_client.chat_postMessage(
+          channel=connected_notification_channel,
+          text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
+          as_user=True
+        )
     flaskApp.run(port=FLASK_PORT)
   else:
     print("Connection failed or disconnected.")
