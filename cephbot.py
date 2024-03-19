@@ -419,7 +419,7 @@ if __name__ == "__main__":
 
   if rtm.is_connected():
     try:
-      for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS:
+      for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS.split():
         rtm.web_client.chat_postMessage(
           channel=connected_notification_channel,
           text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
