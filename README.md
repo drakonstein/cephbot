@@ -20,7 +20,8 @@ Including default values
 ### Required
 For use with the RTM API (required when running multiple instances of cephbot so that Slack will make all messages available to all endpoints)
 ```SLACK_BOT_TOKEN=
-SLACK_BOT_ID=```
+SLACK_BOT_ID=
+```
 
 ### Limit access to cephbot
 This is only really useful if your keyring can perform administrative tasks.
@@ -28,7 +29,8 @@ This is only really useful if your keyring can perform administrative tasks.
 SLACK_USER_ACCESS_DENIED="You do not have permission to use me."
 SLACK_USER_IDS=
 SLACK_CHANNEL_ACCESS_DENIED="This channel does not have permission to use me."
-SLACK_CHANNEL_IDS=```
+SLACK_CHANNEL_IDS=
+```
 
 ### Events
 Using the EVENTS_* variables you can configure cephbot to monitor channels where zabbix, alertmanager, etc place notifications and it will parse messages in EVENTS_SLACK_CHANNELS from EVENTS_SLACK_IDS that include the EVENTS_TRIGGER for the cluster names and thread the EVENTS_COMMANDS in response to the event. This will give additional cluster information in slack in response to any events in the ceph cluster as the event triggers rather than later when engineers can sign in to investigate.
