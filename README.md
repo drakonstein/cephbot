@@ -19,7 +19,8 @@ The server this is running on needs to have ceph installed (for bash scripts in 
 Including default values
 ### Required
 For use with the RTM API (required when running multiple instances of cephbot so that Slack will make all messages available to all endpoints)
-```SLACK_BOT_TOKEN=
+``` bash 
+SLACK_BOT_TOKEN=
 SLACK_BOT_ID=
 ```
 
