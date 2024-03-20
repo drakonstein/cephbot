@@ -418,15 +418,15 @@ if __name__ == "__main__":
     exit()
 
   if rtm.is_connected():
-    try:
-      for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS.split():
+    for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS.split():
+      try:
         rtm.web_client.chat_postMessage(
           channel=connected_notification_channel,
           text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
           as_user=True
         )
-    except:
-      print("Failed to send message to " + connected_notification_channel)
+      except:
+        print("Failed to send message to " + connected_notification_channel)
     flaskApp.run(port=FLASK_PORT)
   else:
     print("Connection failed or disconnected.")
