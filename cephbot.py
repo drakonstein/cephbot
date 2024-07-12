@@ -58,7 +58,9 @@ for key, value in os.environ.items():
 if not CEPH_CLUSTERS:
   CEPH_CLUSTERS['ceph'] = 'all prod'
 
-ERRORS_ONLY_STRS = os.getenv('ERRORS_ONLY_STRS', "ERRORS ERROR UNHEALTHY PROBLEMS PROBLEM").strip().lower()
+ERRORS_ONLY_STRS = os.getenv('ERRORS_ONLY_STRS', "ERRORS ERROR ERR PROBLEMS PROBLEM PROBS PROB UNHEALTHY WARNINGS WARNING WARN").strip().lower()
+GREP = os.getenv('GREP', "GREP").strip().lower()
+GREPV = os.getenv('GREPV', "GREPV").strip().lower()
 
 SCRIPTS_FOLDER = os.getenv('SCRIPTS_FOLDER', './scripts/')
 
@@ -69,8 +71,8 @@ CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/CLUSTER.CEPH_USER.keyri
 FLASK_PORT = os.getenv('FLASK_PORT', "8080")
 
 HELP_MSG = os.getenv('HELP_MSG', "health, health detail, status, osd stat, mon stat, pg stat, down osds, blocked requests, rgw stat").strip()
-TOO_LONG = os.getenv("TOO_LONG", 20)
-TOO_LONG_MSG = os.getenv("TOO_LONG_MSG", "Long responses get threaded.")
+TOO_LONG = os.getenv('TOO_LONG', 20)
+TOO_LONG_MSG = os.getenv('TOO_LONG_MSG', "Long responses get threaded.")
 ALWAYS_THREAD = os.getenv('ALWAYS_THREAD', 'false').lower() in ('true', '1', 't')
 ALWAYS_SHOW_CLUSTER_ID = os.getenv('ALWAYS_SHOW_CLUSTER_ID', 'false').lower() in ('true', '1', 't')
 
@@ -98,7 +100,7 @@ def cephbot_health():
   else:
     return make_response("Cephbot is inactive", 503)
 
-def ceph_command(CLUSTER, command, thread, errors_only):
+def ceph_command(CLUSTER, command, thread, modifier):
   ceph_conf = CEPH_CONF.replace("CLUSTER", CLUSTER)
   ceph_keyring = CEPH_KEYRING.replace("CLUSTER", CLUSTER).replace("CEPH_USER", CEPH_USER)
   error_msg = ERROR_PREFIX + "while executing '" + command + "' on " + CLUSTER + "."
@@ -144,10 +146,8 @@ def ceph_command(CLUSTER, command, thread, errors_only):
     healthy = "No blocked requests"
   elif command == "io":
     bash_command = BASH_COMMAND.replace("COMMAND","io.sh")
-    healthy = "nothing is going on"
   elif command.startswith("pool io"):
     bash_command = BASH_COMMAND.replace("COMMAND","pool_io.sh")
-    healthy = "nothing is going on"
     opt_pool = command.split("pool io")[1].strip().lower()
     if opt_pool:
       bash_command += " --pool " + opt_pool
@@ -200,13 +200,24 @@ def ceph_command(CLUSTER, command, thread, errors_only):
     if output == "":
       output = "All OSDs are up."
       healthy = output
-  
+
   output = output.strip()
-  if errors_only and output == healthy:
+  if modifier:
+    modifier_split = modifier.split(" ", 1)
+  else:
+    modifier_split = ["empty", "empty"]
+
+  if not output:
+    return error_msg, None
+  elif modifier == "errors_only" and output == healthy:
     return None, None
-  elif output and ( len(output.splitlines()) < int(TOO_LONG) or thread ):
+  elif modifier_split[0] == GREP and modifier_split[1] not in output.lower():
+    return None, None
+  elif modifier_split[0] == GREPV and modifier_split[1] in output.lower():
+    return None, None
+  elif ( len(output.splitlines()) < int(TOO_LONG) or thread ):
     return output, None
-  elif output and len(output.splitlines()) >= int(TOO_LONG):
+  elif len(output.splitlines()) >= int(TOO_LONG):
     return TOO_LONG_MSG, output
   else:
     return error_msg, None
@@ -215,7 +226,7 @@ def ceph_command(CLUSTER, command, thread, errors_only):
 def slack_parse(client: RTMClient, event: dict):
   for_cephbot = False
   events_run = False
-  errors_only = False
+  modifier = None
   find_id = False
   reload_print = True
   clusters_matched = []
@@ -284,11 +295,28 @@ def slack_parse(client: RTMClient, event: dict):
   if events_run or command == EVENTS_TRIGGER:
     commands = EVENTS_COMMANDS
   else:
-    for errors_only_str in ERRORS_ONLY_STRS.split():
-      if command.startswith(errors_only_str):
-        command = command.split(errors_only_str, 1)[1].strip().lower()
-        errors_only = True
-        break
+    if command.startswith((f"{GREP} ", f"{GREPV} ")):
+      command_split = command.split(" ", 2)
+      modifier = " ".join(command_split[0:2])
+      command = command_split[2]
+    elif f" {GREP} " in command:
+      command_split = command.split(f" {GREP} ")
+      modifier = f"{GREP} {command_split[1]}"
+      command = command_split[0]
+    elif f" {GREPV} " in command:
+      command_split = command.split(f" {GREPV} ")
+      modifier = f"{GREPV} {command_split[1]}"
+      command = command_split[0]
+    else:
+      for errors_only_str in ERRORS_ONLY_STRS.split():
+        if command.startswith(f"{errors_only_str} "):
+          command = command.split(f"{errors_only_str} ")[1].strip().lower()
+          modifier = "errors_only"
+          break
+        elif command.endswith(f" {errors_only_str}"):
+          command = command.split(f" {errors_only_str}")[0].strip().lower()
+          modifier = "errors_only"
+          break
     commands.append(command)
 
   for CLUSTER in clusters_matched:
@@ -358,7 +386,7 @@ def slack_parse(client: RTMClient, event: dict):
         except:
           print(channel_response)
       else:
-        channel_response, user_response = ceph_command(CLUSTER, command, thread, errors_only)
+        channel_response, user_response = ceph_command(CLUSTER, command, thread, modifier)
       response = None
 
       if channel_response.startswith(ERROR_PREFIX):
@@ -433,3 +461,4 @@ if __name__ == "__main__":
     exit()
 
   print("Good-Bye")
+
