@@ -1,2 +1,2 @@
-slack_bolt ~= 1.14.3
+slack_bolt ~= 1.22.0
 flask
