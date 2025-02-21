@@ -232,6 +232,7 @@ def slack_parse(event: dict, say):
   find_id = False
   reload_print = True
   clusters_matched = []
+  print(event)
 
   if 'thread_ts' in event:
     thread = event['thread_ts']
