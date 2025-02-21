@@ -3,7 +3,7 @@ Slack bot for Ceph
 
 There are instructions for how to deploy this to kubernetes in the kubernetes folder of this repo.
 
-The setup for this is pretty simple. You need to find the Slack Bot's Token and ID.
+The setup for this is pretty simple. You need to find the Slack Bot's OAuth Tokens and the Slack Bot's ID.
 
 I generally create a client.cephbot user in Ceph for this `ceph auth get-or-create client.cephbot mon 'allow r' mgr 'allow r' > /etc/ceph/ceph.client.cephbot.keyring` which prevents people in Slack for figuring out ways of performing operations against the cluster. If you do enable cephbot to perform maintenance on the cluster, I highly recommend that you utilize the SLACK_USER_IDS and SLACK_CHANNEL_IDS config options to limit who can interface with cephbot.
 
@@ -15,12 +15,19 @@ pip install -r requirements.txt
 
 The server this is running on needs to have ceph installed (for bash scripts in the scripts/ directory and the rados python library) and needs to be able to communicate with the mons, but otherwise does not require any other cluster integrations.
 
+## Multiple Clusters
+Cephbot is now capable of communicating with multiple clusters in one instance. It will iterate through all environment variables that start with "CEPH_CLUSTER_". The value of the variables should be in the format "cluster: alias1 alias2 alias3". For CEPH_CONF and CEPH_KEYRING you can use CLUSTER as a literal string in the variable that will be replaced by the cluster name specified in CEPH_CLUSTER variables. If you are not running this in kubernetes, I would run it in a screen with the environment variables set up. Each instance can be configured for 1 or all of your clusters.
+
+## RTM
+If you are running multiple Ceph clusters in multiple datacenters and need to have cephbot running locally in each datacetner, then you need to use the RTM API. This code is archived in the RTM branch. Slack's API is deprecating the classic bot style in Mar 2026 and this will no longer work. The newer bot style and API will not allow multiple endpoints to retrieve all of the messages, only one endpoint will receive each message so all endpoints will need to be able to communciate with all Ceph clusters.
+
 ## Environment Variables
 Including default values
 ### Required
-For use with the RTM API (required when running multiple instances of cephbot so that Slack will make all messages available to all endpoints)
+You get the Tokens from the OAuth & Permissions page. The bot id can be found in many places, including from within Slack.
 ``` bash 
-SLACK_BOT_TOKEN=
+SLACK_BOT_TOKEN={{ Bot User OAuth Token }}
+SLACK_APP_TOKEN={{ User OAuth Token }}
 SLACK_BOT_ID=
 ```
 
@@ -83,17 +90,18 @@ Only report back if there is an unhealthy response from a cluster. Making it ver
 ``` bash
 ERRORS_ONLY_STRS="ERRORS ERROR UNHEALTHY PROBLEMS PROBLEM"
 ```
+Specifically grep for/or remove responses based on a provided string.
+``` bash
+GREP="GREP"
+GREPV="GREPV"
+```
 If you have channels or person's DMs you would like to be notified that Cephbot has been started/restarted. Add the IDs as a space delimited list here.
 ``` bash
 CONNECTED_NOTIFICATION_CHANNELS=
 ```
 
-## Multiple Clusters
-Cephbot is now capable of communicating with multiple clusters in one instance. It will iterate through all environment variables that start with "CEPH_CLUSTER_". The value of the variables should be in the format "cluster: alias1 alias2 alias3". For CEPH_CONF and CEPH_KEYRING you can use CLUSTER as a literal string in the variable that will be replaced by the cluster name specified in CEPH_CLUSTER variables. If you are not running this in kubernetes, I would run it in a screen with the environment variables set up. Each instance can be configured for 1 or all of your clusters.
-
 ## Execution
 Create an environment (ie .env) file with your values. Then execute the following:
-
 ``` bash
 source .env
 python cephbot.py
