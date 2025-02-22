@@ -72,6 +72,7 @@ CEPH_KEYRING = os.getenv('CEPH_KEYRING_FILE', "/etc/ceph/CLUSTER.CEPH_USER.keyri
 FLASK_PORT = os.getenv('FLASK_PORT', "8080")
 
 HELP_MSG = os.getenv('HELP_MSG', "health, health detail, status, osd stat, mon stat, pg stat, down osds, blocked requests, rgw stat").strip()
+HELP_URL = os.getenv('HELP_URL', "https://github.com/ceph/cephbot-slack/")
 TOO_LONG = os.getenv('TOO_LONG', 20)
 TOO_LONG_MSG = os.getenv('TOO_LONG_MSG', "Long responses get threaded.")
 ALWAYS_THREAD = os.getenv('ALWAYS_THREAD', 'false').lower() in ('true', '1', 't')
@@ -232,7 +233,6 @@ def slack_parse(event: dict, say):
   find_id = False
   reload_print = True
   clusters_matched = []
-  print(event)
 
   if 'thread_ts' in event:
     thread = event['thread_ts']
@@ -266,7 +266,7 @@ def slack_parse(event: dict, say):
   elif AT_BOT in command:
     for_cephbot = True
     command = command.split(AT_BOT, 1)[1].strip()
-  elif channel.startswith('D'):
+  elif event['channel_type'] == "im":
     for_cephbot = True
 
   if not for_cephbot:
@@ -331,7 +331,7 @@ def slack_parse(event: dict, say):
       if SLACK_USER_IDS and not user in SLACK_USER_IDS:
         channel_response = None
         user_response = SLACK_USER_ACCESS_DENIED
-      elif SLACK_CHANNEL_IDS and not channel.startswith('D') and not channel in SLACK_CHANNEL_IDS:
+      elif SLACK_CHANNEL_IDS and not event['channel_type'] == "im" and not channel in SLACK_CHANNEL_IDS:
         channel_response = SLACK_CHANNEL_ACCESS_DENIED
         user_response = None
       elif command == HELP:
@@ -339,7 +339,7 @@ def slack_parse(event: dict, say):
         show_cluster_id = True
         if CLUSTER == "self":
           show_cluster_id = False
-          channel_response = "Clusters: " + " ".join(CEPH_CLUSTERS.keys()) + "\nhttps://confluence.sie.sony.com/display/CGEI/Cephbot+Guide"
+          channel_response = "Clusters: " + " ".join(CEPH_CLUSTERS.keys()) + "\n" + HELP_URL
         elif "ALIASES" in HELP_MSG:
           channel_response = HELP_MSG.replace("ALIASES", CEPH_CLUSTERS[CLUSTER])
         else:
@@ -398,8 +398,8 @@ def slack_parse(event: dict, say):
         else:
           error = True
 
-      # Direct Messages have a channel that starts with a 'D'
-      if channel_response and not ( channel.startswith('D') and channel_response == TOO_LONG_MSG ):
+      if channel_response and not ( event['channel_type'] == "im" and channel_response == TOO_LONG_MSG ):
+        print(command + ":" + channel_response)
         channel_response = "```" + channel_response + "```"
         if show_cluster_id:
           if not channel_response.startswith("```" + CLUSTER):
@@ -419,6 +419,7 @@ def slack_parse(event: dict, say):
           )
 
       if user_response:
+        print(command + ":" + user_response)
         user_response = "```" + user_response + "```"
         if channel_response and channel_response == TOO_LONG_MSG and response:
           thread = response['ts']
@@ -449,15 +450,16 @@ if __name__ == "__main__":
     exit()
 
   if handler.client.is_connected():
-    for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS.split():
-      try:
-        slackApp.client.chat_postMessage(
-          channel=connected_notification_channel,
-          text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
-          as_user=True
-        )
-      except:
-        print("Failed to send message to " + connected_notification_channel)
+    if CONNECTED_NOTIFICATION_CHANNELS is not None:
+      for connected_notification_channel in CONNECTED_NOTIFICATION_CHANNELS.split():
+        try:
+          slackApp.client.chat_postMessage(
+            channel=connected_notification_channel,
+            text="Connected: " + " ".join(CEPH_CLUSTERS.keys()),
+            as_user=True
+          )
+        except:
+          print("Failed to send message to " + connected_notification_channel)
     flaskApp.run(port=FLASK_PORT)
   else:
     print("Connection failed or disconnected.")
