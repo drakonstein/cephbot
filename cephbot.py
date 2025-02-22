@@ -399,7 +399,6 @@ def slack_parse(event: dict, say):
           error = True
 
       if channel_response and not ( event['channel_type'] == "im" and channel_response == TOO_LONG_MSG ):
-        print(command + ":" + channel_response)
         channel_response = "```" + channel_response + "```"
         if show_cluster_id:
           if not channel_response.startswith("```" + CLUSTER):
@@ -419,7 +418,6 @@ def slack_parse(event: dict, say):
           )
 
       if user_response:
-        print(command + ":" + user_response)
         user_response = "```" + user_response + "```"
         if channel_response and channel_response == TOO_LONG_MSG and response:
           thread = response['ts']
