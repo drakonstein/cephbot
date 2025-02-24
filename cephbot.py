@@ -328,7 +328,7 @@ def slack_parse(event: dict, say):
         show_cluster_id = True
         if CLUSTER == "self":
           show_cluster_id = False
-          channel_response = f"Clusters: {" ".join(CEPH_CLUSTERS.keys())}\n{HELP_URL}"
+          channel_response = f"Clusters: {' '.join(CEPH_CLUSTERS.keys())}\n{HELP_URL}"
         elif "ALIASES" in HELP_MSG:
           channel_response = HELP_MSG.replace("ALIASES", CEPH_CLUSTERS[CLUSTER])
         else:
@@ -351,9 +351,9 @@ def slack_parse(event: dict, say):
           channel_response += f"\nALWAYS_SHOW_CLUSTER_ID: {str(ALWAYS_SHOW_CLUSTER_ID)}"
           # Ceph settings
           channel_response += "\n\n### Ceph Settings ###"
-          channel_response += f"\nCEPH_CONF: {str(CEPH_CONF).replace("CLUSTER", CLUSTER)}"
+          channel_response += f"\nCEPH_CONF: {str(CEPH_CONF).replace('CLUSTER', CLUSTER)}"
           channel_response += f"\nCEPH_USER: {str(CEPH_USER)}"
-          channel_response += f"\nCEPH_KEYRING: {str(CEPH_KEYRING).replace("CLUSTER", CLUSTER).replace("CEPH_USER", CEPH_USER)}"
+          channel_response += f"\nCEPH_KEYRING: {str(CEPH_KEYRING).replace('CLUSTER', CLUSTER).replace('CEPH_USER', CEPH_USER)}"
           channel_response += f"\nAliases: {str(CEPH_CLUSTERS[CLUSTER])}"
           channel_response += f"\nSCRIPTS_FOLDER: {str(SCRIPTS_FOLDER)}"
           # Events settings
@@ -403,7 +403,7 @@ def slack_parse(event: dict, say):
         else:
           thread = None
         if show_cluster_id:
-          if not user_response.startswith(f"```CLUSTER}"):
+          if not user_response.startswith(f"```{CLUSTER}"):
             user_response = f"{CLUSTER}: {command}\n{user_response}"
         if thread:
           say(
@@ -432,7 +432,7 @@ if __name__ == "__main__":
         try:
           slackApp.client.chat_postMessage(
             channel=connected_notification_channel,
-            text=f"Connected: {" ".join(CEPH_CLUSTERS.keys())}",
+            text=f"Connected: {' '.join(CEPH_CLUSTERS.keys())}",
             as_user=True
           )
         except:
