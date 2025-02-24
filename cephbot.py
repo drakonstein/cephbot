@@ -84,10 +84,6 @@ ERROR_PREFIX = "Something went wrong "
 
 CONNECTED_NOTIFICATION_CHANNELS = os.getenv('CONNECTED_NOTIFICATION_CHANNELS', None)
 
-# When reload is triggered, this value will be updated and the k8s health check will fail causing the pod to be restarted.
-RELOAD = "reload"
-reload = False
-
 slackApp = App(token=SLACK_BOT_TOKEN)
 handler = SocketModeHandler(slackApp, SLACK_APP_TOKEN)
 flaskApp = Flask(__name__)
@@ -96,9 +92,7 @@ log.setLevel(logging.ERROR)
 
 @flaskApp.route("/health", methods=["GET"])
 def cephbot_health():
-  if reload:
-    return make_response("Cephbot needs to reload configs", 503)
-  elif handler.client is not None and handler.client.is_connected():
+  if handler.client is not None and handler.client.is_connected():
     return make_response("OK", 200)
   else:
     return make_response("Cephbot is inactive", 503)
@@ -229,7 +223,6 @@ def slack_parse(event: dict, say):
   events_run = False
   modifier = None
   find_id = False
-  reload_print = True
   clusters_matched = []
 
   if 'thread_ts' in event:
@@ -272,8 +265,6 @@ def slack_parse(event: dict, say):
 
   if not events_run and not find_id:
     if not command or command == HELP:
-      clusters_matched.append("self")
-    elif command == RELOAD:
       clusters_matched.append("self")
     else:
       cluster_match = False
@@ -342,14 +333,6 @@ def slack_parse(event: dict, say):
           channel_response = HELP_MSG.replace("ALIASES", CEPH_CLUSTERS[CLUSTER])
         else:
           channel_response = HELP_MSG
-      elif command == RELOAD:
-        # Only print reload information once
-        if reload_print:
-          channel_response = f"Reloading settings for: {" ".join(CEPH_CLUSTERS.keys())}"
-          user_response = None
-          globals()["reload"] = True
-          reload_print = False
-          show_cluster_id = False
       elif find_id or command == "whoami":
         channel_response = f"You are {user}"
         user_response = None
@@ -373,8 +356,6 @@ def slack_parse(event: dict, say):
           channel_response += f"\nCEPH_KEYRING: {str(CEPH_KEYRING).replace("CLUSTER", CLUSTER).replace("CEPH_USER", CEPH_USER)}"
           channel_response += f"\nAliases: {str(CEPH_CLUSTERS[CLUSTER])}"
           channel_response += f"\nSCRIPTS_FOLDER: {str(SCRIPTS_FOLDER)}"
-          channel_response += f"\nRELOAD: {str(RELOAD)}"
-          channel_response += f"\nreload: {str(reload)}"
           # Events settings
           channel_response += "\n\n### Events Settings ###"
           channel_response += f"\nEVENTS_ENABLED: {str(EVENTS_ENABLED)}"
